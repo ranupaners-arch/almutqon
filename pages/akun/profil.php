@@ -1,0 +1,159 @@
+<?php
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/auth.php';
+require_once __DIR__ . '/../../config/csrf.php';
+
+if (!isset($_SESSION['user'])) {
+    header('Location: /');
+    exit;
+}
+
+$user = $_SESSION['user'];
+$user_id = (int) $user['id'];
+
+$pesan_sukses = $_SESSION['pesan_sukses'] ?? '';
+$jenis_pesan = $_SESSION['jenis_pesan'] ?? '';
+unset($_SESSION['pesan_sukses']);
+unset($_SESSION['jenis_pesan']);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+
+    $name = trim($_POST['name'] ?? '');
+    $avatar_path = $user['avatar'] ?? null;
+
+    if ($name === '') {
+        $_SESSION['pesan_sukses'] = 'Nama lengkap wajib diisi.';
+        $_SESSION['jenis_pesan'] = 'error';
+    } else {
+        if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === 0) {
+            $target_dir = __DIR__ . '/../../assets/avatars/';
+            if (!file_exists($target_dir)) {
+                mkdir($target_dir, 0777, true);
+            }
+
+            $ext = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
+            $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+            $max_size = 1024 * 1024; // 1 MB
+
+            if (!in_array($ext, $allowed, true)) {
+                $_SESSION['pesan_sukses'] = 'Format avatar tidak didukung. Gunakan JPG, PNG, atau WebP.';
+                $_SESSION['jenis_pesan'] = 'error';
+            } elseif ($_FILES['avatar']['size'] > $max_size) {
+                $_SESSION['pesan_sukses'] = 'Ukuran avatar maksimal 1 MB.';
+                $_SESSION['jenis_pesan'] = 'error';
+            } else {
+                $new_name = 'avt_' . uniqid('', true) . '.' . $ext;
+                $target = $target_dir . $new_name;
+                if (move_uploaded_file($_FILES['avatar']['tmp_name'], $target)) {
+                    if (!empty($user['avatar'])) {
+                        $old_file = $target_dir . pathinfo($user['avatar'], PATHINFO_BASENAME);
+                        if (file_exists($old_file)) {
+                            @unlink($old_file);
+                        }
+                    }
+                    $avatar_path = 'assets/avatars/' . $new_name;
+                }
+            }
+        }
+
+        if ($jenis_pesan !== 'error') {
+            $stmt = $pdo->prepare('UPDATE users SET name = ?, avatar = ? WHERE id = ?');
+            $stmt->execute([$name, $avatar_path, $user_id]);
+
+            $_SESSION['user']['name'] = $name;
+            $_SESSION['user']['avatar'] = $avatar_path;
+            $user = $_SESSION['user'];
+
+            $_SESSION['pesan_sukses'] = 'Profil berhasil diperbarui.';
+            $_SESSION['jenis_pesan'] = 'success';
+        }
+    }
+
+    header('Location: profil.php');
+    exit;
+}
+
+include __DIR__ . '/../../layouts/header.php';
+?>
+
+<!-- =================== PAGE HERO =================== -->
+<section class="page-hero">
+    <div class="container">
+        <span class="section-label">Akun</span>
+        <h1 class="page-hero__title">Profil Saya</h1>
+        <p class="page-hero__desc">Perbarui nama dan foto profil Anda.</p>
+    </div>
+</section>
+
+<section class="section" style="padding-top: 40px; padding-bottom: 80px; min-height: 60vh;">
+    <div class="container" style="max-width: 520px;">
+
+        <?php if ($pesan_sukses): ?>
+            <div style="padding: 16px; border-radius: 8px; margin-bottom: 24px; font-size: 15px; border-left: 4px solid;
+                        background: <?= $jenis_pesan === 'success' ? '#dcfce7' : '#fee2e2' ?>;
+                        color: <?= $jenis_pesan === 'success' ? '#166534' : '#991b1b' ?>;
+                        border-left-color: <?= $jenis_pesan === 'success' ? '#22c55e' : '#ef4444' ?>;">
+                <?= htmlspecialchars($pesan_sukses) ?>
+            </div>
+        <?php endif; ?>
+
+        <form method="POST" enctype="multipart/form-data"
+              style="background: var(--surface, #fff); padding: 32px; border-radius: 12px; box-shadow: var(--shadow-sm, 0 4px 6px rgba(0,0,0,0.05));">
+            <?= csrf_field() ?>
+            <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 24px;">
+                <div id="avatarPreview" style="width: 96px; height: 96px; border-radius: 50%; overflow: hidden;
+                            background: linear-gradient(135deg, var(--forest, #166534), var(--forest-dark, #14532D)); color: #fff; font-size: 40px; font-weight: 700;
+                            display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                    <?php if (!empty($user['avatar'])): ?>
+                        <img src="/<?= htmlspecialchars($user['avatar']) ?>" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                    <?php else: ?>
+                        <?= htmlspecialchars(mb_strtoupper(mb_substr($user['name'] ?: '?', 0, 1))) ?>
+                    <?php endif; ?>
+                </div>
+                <label for="avatar" style="font-size: 14px; color: var(--primary); font-weight: 600; cursor: pointer;">Ubah Foto Profil</label>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label for="avatar" style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--text-body, #475569);">Foto Profil</label>
+                <input type="file" id="avatar" name="avatar" accept="image/jpeg,image/png,image/webp"
+                       style="width: 100%; padding: 10px; border: 2px dashed var(--border, #cbd5e1); border-radius: 8px; background: var(--background, #f8fafc);">
+                <p style="font-size: 13px; color: var(--muted, #94a3b8); margin-top: 6px;">JPG, PNG, atau WebP. Maksimal 1 MB.</p>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label for="name" style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--text-body, #475569);">Nama Lengkap</label>
+                <input type="text" id="name" name="name" required value="<?= htmlspecialchars($user['name']) ?>"
+                        style="width: 100%; padding: 12px 16px; border: 1px solid var(--border, #cbd5e1); border-radius: 8px; font-size: 16px; background: var(--background); color: var(--text-dark); box-sizing: border-box;">
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--text-body, #475569);">Email</label>
+                <input type="email" value="<?= htmlspecialchars($user['email']) ?>" disabled
+                       style="width: 100%; padding: 12px 16px; border: 1px solid var(--border, #e2e8f0); border-radius: 8px; font-size: 16px; background: var(--surface, #f8fafc); color: var(--muted, #94a3b8); box-sizing: border-box;">
+            </div>
+
+            <button type="submit" class="btn btn-primary"
+                    style="padding: 14px 32px; font-size: 16px; border: none; cursor: pointer; border-radius: 8px;">Simpan Profil</button>
+        </form>
+
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('avatar');
+    const preview = document.getElementById('avatarPreview');
+    input.addEventListener('change', () => {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            preview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="width: 100%; height: 100%; object-fit: cover;">`;
+        };
+        reader.readAsDataURL(file);
+    });
+});
+</script>
+
+<?php include __DIR__ . '/../../layouts/footer.php'; ?>

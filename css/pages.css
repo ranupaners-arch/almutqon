@@ -1,0 +1,478 @@
+/* ===================================================================
+   ALMUTQON FOUNDATION — PAGES
+   Page hero, visi-misi, values, program detail, article content,
+   article grid & cards, Quill editor support
+   =================================================================== */
+
+/* ============ PAGE HERO (Untuk Halaman Dalam) ============ */
+.page-hero {
+    padding: 130px 0 60px;
+    background: linear-gradient(170deg, #F0FDFA 0%, #FFFFFF 100%);
+    text-align: center;
+}
+.page-hero__title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    margin: 12px 0 16px;
+}
+.page-hero__desc {
+    font-size: 17px;
+    color: var(--text-body);
+    max-width: 600px;
+    margin: 0 auto;
+}
+/* ============ BREADCRUMB ============ */
+.breadcrumbs {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+.breadcrumbs__list {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 8px 18px;
+    font-size: 13px;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+}
+.breadcrumbs__item {
+    display: inline-flex;
+    align-items: center;
+}
+.breadcrumbs__item + .breadcrumbs__item::before {
+    content: '\203A';
+    margin-right: 8px;
+    color: var(--muted);
+    opacity: .5;
+}
+.breadcrumbs__link {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+.breadcrumbs__link:hover {
+    text-decoration: underline;
+}
+.breadcrumbs__current {
+    font-weight: 600;
+    color: var(--text-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 260px;
+}
+/* ============ BAGIKAN ARTIKEL ============ */
+.article-share {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+}
+.article-share__label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-right: 4px;
+}
+.article-share__btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.article-share__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    color: #fff;
+    transition: transform var(--transition), box-shadow var(--transition);
+}
+.article-share__btn:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+.article-share__btn:focus-visible {
+    outline: 3px solid var(--primary-light);
+    outline-offset: 2px;
+}
+.article-share__btn--wa { background: #25D366; }
+.article-share__btn--fb { background: #1877F2; }
+.article-share__btn--x  { background: #111; }
+.article-share__btn--tg { background: #0088CC; }
+.article-share__btn--copy {
+    background: var(--surface);
+    color: var(--primary);
+    border: 1px solid var(--border);
+    cursor: pointer;
+}
+:root[data-theme='dark'] .article-share__btn--x,
+:root[data-theme='dark'] .article-share__btn--x svg { fill: #111; }
+
+/* Tombol share kecil di kartu artikel (halaman index & beranda) */
+.article-card__share {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    z-index: 2;
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, .95);
+    backdrop-filter: blur(8px);
+    color: var(--primary);
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition), background .2s;
+}
+.article-card__share:hover {
+    transform: translateY(-2px) scale(1.05);
+    background: #fff;
+}
+.article-card__share:focus-visible {
+    outline: 3px solid var(--primary-light);
+    outline-offset: 2px;
+}
+.article-card__share .material-symbols-rounded { font-size: 18px; }
+:root[data-theme='dark'] .article-card__share {
+    background: rgba(15, 23, 42, .8);
+    border: 1px solid rgba(148, 163, 184, .28);
+    box-shadow: 0 6px 16px -6px rgba(0,0,0,.55);
+}
+:root[data-theme='dark'] .article-card__share:hover {
+    background: rgba(30, 41, 59, .95);
+    border-color: rgba(148, 163, 184, .4);
+}
+:root[data-theme='dark'] .article-card__share:focus-visible { outline-color: var(--primary-light); }
+
+/* Menu bagikan (muncul saat tombol share kartu diklik) */
+.share-menu {
+    position: fixed;
+    z-index: 10000;
+    min-width: 210px;
+    padding: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+}
+.share-menu.active { display: flex; }
+.share-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 12px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-dark);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    transition: background .15s;
+}
+.share-menu__item:hover { background: var(--primary-light); }
+.share-menu__item:focus-visible { outline: 3px solid var(--primary-light); outline-offset: -2px; }
+.share-menu__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    color: #fff;
+    flex-shrink: 0;
+}
+.share-menu__icon--wa { background: #25D366; }
+.share-menu__icon--x  { background: #111; }
+.share-menu__icon--fb { background: #1877F2; }
+.share-menu__icon--tg { background: #0088CC; }
+.share-menu__icon--copy {
+    background: var(--surface);
+    color: var(--primary);
+    border: 1px solid var(--border);
+    font-size: 16px;
+}
+:root[data-theme='dark'] .share-menu__icon--x,
+:root[data-theme='dark'] .share-menu__icon--x svg { fill: #111; }
+
+/* Toast "Tautan disalin" */
+.share-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translate(-50%, 20px);
+    z-index: 9999;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: var(--radius-full);
+    background: var(--text-dark);
+    color: var(--card);
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease, transform .25s ease;
+}
+.share-toast.active {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+:root[data-theme='dark'] .share-toast {
+    background: var(--surface);
+    color: var(--text-dark);
+}
+/* ============ VISI MISI ============ */
+.visi-misi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-top: 40px;
+}
+.visi-misi-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 40px;
+    transition: all var(--transition);
+}
+.visi-misi-card:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-light);
+    transform: translateY(-4px);
+}
+.visi-misi-icon {
+    width: 56px; height: 56px;
+    background: var(--primary-light);
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--primary);
+    margin-bottom: 24px;
+}
+.visi-misi-icon .material-symbols-rounded { font-size: 28px; }
+.visi-misi-card h3 { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
+.visi-misi-card p { font-size: 16px; line-height: 1.7; color: var(--text-body); }
+.visi-misi-card ul { margin-top: 16px; display: flex; flex-direction: column; gap: 12px; }
+.visi-misi-card li { 
+    display: flex; align-items: flex-start; gap: 10px; 
+    font-size: 15px; color: var(--text-body); line-height: 1.6; 
+}
+.visi-misi-card li .material-symbols-rounded { 
+    font-size: 20px; color: var(--primary); flex-shrink: 0; margin-top: 2px; 
+}
+
+/* ============ VALUES / NILAI ============ */
+.values-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    margin-top: 40px;
+}
+.value-card {
+    text-align: center;
+    padding: 32px 24px;
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    transition: all var(--transition);
+}
+.value-card:hover { background: var(--card); box-shadow: var(--shadow-md); transform: translateY(-4px); }
+.value-card__icon {
+    width: 64px; height: 64px;
+    background: var(--card);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+    color: var(--primary);
+    box-shadow: var(--shadow-sm);
+}
+.value-card__icon .material-symbols-rounded { font-size: 32px; }
+.value-card h4 { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+.value-card p { font-size: 14px; line-height: 1.6; color: var(--text-body); }
+
+/* ============ PROGRAM DETAIL PAGE ============ */
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-top: 32px;
+}
+.feature-card {
+    background: var(--card);
+    padding: 28px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    transition: all var(--transition);
+}
+.feature-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-light);
+    transform: translateY(-4px);
+}
+.feature-card__icon {
+    width: 48px; height: 48px;
+    background: var(--primary-light);
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--primary);
+    margin-bottom: 16px;
+}
+.feature-card__icon .material-symbols-rounded { font-size: 24px; }
+.feature-card h4 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.feature-card p { font-size: 14px; line-height: 1.6; color: var(--text-body); }
+
+.price-tag {
+    font-size: 26px; font-weight: 800; color: #16A34A; letter-spacing: .5px; margin: 10px 0 2px;
+}
+.price-tag__unit { font-size: 14px; font-weight: 600; color: #4b5563; letter-spacing: 0; }
+.price-tag__ket { font-size: 12.5px; color: #6b7280; margin: 0 0 14px; font-weight: 600; }
+
+.curriculum-list {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0 0 0;
+}
+.curriculum-list li {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 15px;
+    color: var(--text-dark);
+}
+.curriculum-list li:last-child { border-bottom: none; }
+.curriculum-list .material-symbols-rounded {
+    color: var(--primary);
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+/* ============ ARTICLE CONTENT STYLING (ANTI RIBET) ============ */
+.article-content {
+    font-family: var(--font-body);
+    color: var(--text-body);
+    line-height: 1.8;
+    font-size: 16px;
+    max-width: 800px; /* Supaya tidak terlalu lebar dan enak dibaca */
+    margin: 0 auto;
+}
+
+/* Otomatis merapikan Heading 2 dari editor */
+.article-content h2 {
+    font-family: var(--font-heading);
+    color: var(--text-dark);
+    font-size: 26px;
+    font-weight: 700;
+    margin-top: 40px;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+/* Garis aksen kecil di atas Heading 2 (biar senada dengan website) */
+.article-content h2::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 3px;
+    background: var(--primary);
+    margin-bottom: 12px;
+    border-radius: 2px;
+}
+
+/* Otomatis merapikan paragraf (gak perlu text-indent manual lagi!) */
+.article-content p {
+    margin-bottom: 20px;
+    text-indent: 40px; /* Indentasi otomatis untuk setiap paragraf */
+}
+
+/* Otomatis merapikan gambar */
+.article-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-lg);
+    margin: 30px auto;
+    display: block;
+    box-shadow: var(--shadow-md);
+}
+.article-content p {
+    text-indent: 40px; /* Ini otomatis bikin paragraf menjorok ke dalam */
+    margin-bottom: 20px;
+}
+/* ============ ARTICLE GRID & CARDS ============ */
+.article-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 28px;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    transition: all var(--transition);
+    position: relative;
+}
+
+/* Efek Hover (Sama persis seperti card program/kurikulum) */
+.article-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-light);
+}
+
+.article-card__title {
+    font-family: var(--font-heading);
+    color: var(--text-dark);
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    line-height: 1.4;
+}
+
+/* ============ SUPPORT QUILL ALIGNMENT CLASSES ============ */
+.article-content .ql-align-center {
+    text-align: center !important;
+}
+
+.article-content .ql-align-right {
+    text-align: right !important;
+}
+
+.article-content .ql-align-justify {
+    text-align: justify !important;
+}
+
+/* Fallback untuk inline style (jika Quill pakai style attribute) */
+.article-content p[style*="text-align: center"] {
+    text-align: center !important;
+}
+
+.article-content p[style*="text-align: right"] {
+    text-align: right !important;
+}
+
+.article-content p[style*="text-align: justify"] {
+    text-align: justify !important;
+}
