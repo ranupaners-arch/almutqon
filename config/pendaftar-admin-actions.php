@@ -48,18 +48,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['lunas'])) {
     $adminNama = $_SESSION['user']['name'] ?? 'Admin Almutqon';
     $pdfBytes = null;
 
+    // 1) Bangun PDF struk (tanpa QR) — bukti yang didaftarkan ke layanan verifikasi.
+    try {
+        $pdfBytes = (new StrukPdf())->struk($row, pembayaran_info(), $adminNama);
+    } catch (\Throwable $t) {
+        error_log('[struk-pdf] ' . $t->getMessage());
+        $pdfBytes = null;
+    }
+
+    // 2) Daftarkan dokumen ke API verifikasi (best-effort: gagal tak membatalkan LUNAS).
+    //    Dilakukan SEBELUM email agar QR berisi tautan verifikasi yang sudah jadi.
+    $vr = ['ok' => false, 'skipped' => true, 'code' => '', 'url' => '', 'error' => ''];
+    if ($pdfBytes !== null) {
+        $vr = verif_register_doc($pdo, $id, $row, $adminNama, $pdfBytes);
+    }
+
+    // 3) Kirim email. PDF BER-QR dipakai bila verifikasi berhasil; fallback ke PDF biasa.
     if ($email !== '') {
         try {
-            $pdf = (new StrukPdf())->struk($row, pembayaran_info(), $adminNama);
-            $pdfBytes = $pdf;
+            $verif = ($vr['ok'] && trim((string) ($vr['url'] ?? '')) !== '')
+                ? ['url' => $vr['url'], 'code' => (string) ($vr['code'] ?? '')]
+                : null;
+            $pdf = ($verif !== null && $pdfBytes !== null)
+                ? (new StrukPdf())->struk($row, pembayaran_info(), $adminNama, $verif)
+                : $pdfBytes;
+            if ($pdf === null) {
+                throw new \RuntimeException('PDF struk tidak tersedia');
+            }
+            $parVerif = ($verif !== null)
+                ? "\nVerifikasi keaslian:\n{$verif['url']}\nKode verifikasi: {$verif['code']}\n"
+                : "\nStruk belum tercatat untuk verifikasi keaslian (QR tidak tersedia).\n";
             $body = "Yth. " . ($row['nama'] ?? 'Saudara/Saudari') . ",\n\n"
                 . "Terima kasih atas pembayaran kursus AL-MUTQON.\n\n"
                 . "No. Invoice   : {$noInvoice}\n"
                 . "Total         : " . rupiah((int) $row['biaya']) . "\n"
                 . "Status        : LUNAS\n"
                 . "Tanggal Bayar : " . date('d M Y H:i') . "\n\n"
-                . "Struk/kwitansi resmi terlampir pada email ini (PDF). Simpan sebagai bukti pembayaran.\n\n"
-                . "-- Administrasi Al-Mutqon\nadmin.almutqon@gmail.com";
+                . "Struk/kwitansi resmi terlampir pada email ini (PDF). Simpan sebagai bukti pembayaran."
+                . $parVerif
+                . "\n-- Administrasi Al-Mutqon\nadmin.almutqon@gmail.com";
             $r = send_mail($email, "Struk Pembayaran Kursus AL-MUTQON — {$noInvoice}", $body, [
                 'filename' => 'struk-' . $noInvoice . '.pdf',
                 'data' => $pdf,
@@ -79,23 +106,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['lunas'])) {
         $baseErr = true;
     }
 
-    // Daftarkan struk sebagai dokumen terverifikasi (best-effort: gagal tak membatalkan LUNAS).
-    // Bila email kosong (PDF belum dibangun), bangun PDF khusus untuk verifikasi.
-    if ($pdfBytes === null) {
-        try {
-            $pdfBytes = (new StrukPdf())->struk($row, pembayaran_info(), $adminNama);
-        } catch (\Throwable $t) {
-            error_log('[verif-pdf] ' . $t->getMessage());
-            $pdfBytes = null;
-        }
-    }
-    if ($pdfBytes !== null) {
-        $vr = verif_register_doc($pdo, $id, $row, $adminNama, $pdfBytes);
-        if ($vr['ok']) {
-            $baseMsg .= " Dokumen terverifikasi (Kode: {$vr['code']}).";
-        } elseif (!$vr['skipped']) {
-            $baseMsg .= " Pencatatan verifikasi gagal — ulangi dari halaman Pembayaran.";
-        }
+    if ($vr['ok']) {
+        $baseMsg .= " Dokumen terverifikasi (Kode: {$vr['code']}).";
+    } elseif (!$vr['skipped']) {
+        $baseMsg .= " Pencatatan verifikasi gagal — ulangi dari halaman Pembayaran.";
     }
     if ($baseErr) {
         flash_error($baseMsg);

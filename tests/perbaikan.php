@@ -367,7 +367,8 @@ if ($pdo) {
         t('dokumen verif aktif + PDF tersimpan', $vd && $vd['status'] === 'active' && !empty($vd['pdf_path']));
 
         $r = http('GET', "{$baseUrl}/pages/bayar/struk.php?no=" . urlencode($vinv), $jarV);
-        t('struk tampilkan blok verifikasi + QR', $r['status'] === 200 && strpos($r['body'], 'VERIFIKASI KEASLIAN DOKUMEN') !== false && strpos($r['body'], 'id="verifQr"') !== false, "status {$r['status']}");
+        $bk = stripos($r['body'], 'VERIFIKASI KEASLIAN DOKUMEN') === false && stripos($r['body'], 'Penerima / Orang Tua') === false;
+        t('struk tampilkan QR tanpa blok judul/teks verifikasi', $r['status'] === 200 && strpos($r['body'], 'id="verifQr"') !== false && strpos($r['body'], 'Kode:') !== false && $bk, "status {$r['status']}");
 
         $r = http('GET', "{$baseUrl}/admin/data-pembayaran.php", $jarV);
         preg_match('/name="csrf_token" value="([^"]+)"/', $r['body'], $mv2);

@@ -35,7 +35,7 @@ include __DIR__ . '/../layouts/admin-header.php';
     </div>
 <?php endif; ?>
 
-<div class="admin__card" style="max-width:560px;">
+<div class="admin__card" style="max-width:560px; margin:0 auto;">
     <form method="POST" autocomplete="off">
         <?= csrf_field() ?>
         <div class="admin__form-group">

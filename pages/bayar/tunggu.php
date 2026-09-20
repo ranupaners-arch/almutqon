@@ -98,9 +98,7 @@ $metodeBayarLabel = match ($mb) {
     .box .gambar { text-align: center; margin-top: 8px; }
     .box .gambar img { width: 170px; border-radius: 10px; }
     .verif2 { margin-top: 16px; border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; background: #f8fafc; display: flex; gap: 16px; align-items: center; }
-    .verif2 h3 { margin: 0 0 6px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #64748b; }
     .verif2 p { margin: 4px 0; font-size: 13.5px; color: #334155; }
-    .verif2 a { color: #166534; font-weight: 700; overflow-wrap: anywhere; }
     .verif2__code strong { font-size: 16px; letter-spacing: 2px; }
     .verif2__qr { flex: none; margin-left: auto; }
     .verif2__qr svg, .verif2__qr canvas { display: block; border-radius: 8px; }
@@ -221,13 +219,11 @@ $metodeBayarLabel = match ($mb) {
             <?php if ($verifUrl !== ''): ?>
             <div class="verif2">
                 <div>
-                    <h3>Verifikasi Keaslian</h3>
-                    <p>Struk ini terdaftar sebagai dokumen terverifikasi. Pindai QR atau buka <a href="<?= htmlspecialchars($verifUrl) ?>" target="_blank" rel="noopener">tautan verifikasi</a>.</p>
                     <?php if ($verifCode !== ''): ?>
                     <p class="verif2__code">Kode: <strong><?= htmlspecialchars($verifCode) ?></strong></p>
                     <?php endif; ?>
                 </div>
-                <div class="verif2__qr" id="verifQr" role="img" aria-label="QR verifikasi dokumen"></div>
+                <div class="verif2__qr" id="verifQr" data-url="<?= htmlspecialchars($verifUrl) ?>" role="img" aria-label="QR verifikasi dokumen"></div>
             </div>
             <?php endif; ?>
 
@@ -326,20 +322,20 @@ $metodeBayarLabel = match ($mb) {
 </script>
 <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
 <script>
-// QR verifikasi dokumen (hanya ada saat LUNAS terverifikasi; gagal load = tautan+kode tetap tampil)
+// QR verifikasi dokumen (hanya ada saat LUNAS terverifikasi; gagal load = kode tetap tampil)
 (function () {
     var el = document.getElementById('verifQr');
     if (!el || typeof QRCodeStyling === 'undefined') return;
-    var link = el.closest('.verif2').querySelector('a');
-    if (!link) return;
+    var data = el.getAttribute('data-url');
+    if (!data) return;
     try {
         new QRCodeStyling({
             width: 120, height: 120,
-            data: link.href,
-            dotsOptions: { color: '#0B1120', type: 'rounded' },
+            data: data,
+            dotsOptions: { color: '#000000', type: 'square' },
             backgroundOptions: { color: '#ffffff' },
-            cornersSquareOptions: { color: '#0B1120' },
-            cornersDotOptions: { color: '#F59E0B' }
+            cornersSquareOptions: { color: '#000000', type: 'square' },
+            cornersDotOptions: { color: '#000000', type: 'square' }
         }).append(el);
     } catch (e) { /* abaikan */ }
 })();

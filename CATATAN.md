@@ -434,7 +434,7 @@ Dokumen ini untuk melanjutkan sesi kerja. Update setelah tiap perubahan.
 - **Migrasi** `config/schema-verif.php` (idempoten; **wajib juga di live**): `verif_token CHAR(64)`, `verif_code CHAR(6)`, `verif_url VARCHAR(255)` AFTER `no_invoice`. `SELECT *` di semua halaman ikut otomatis.
 - **Hook** `config/pendaftar-admin-actions.php`: Lunas → email (pesan persis semula, kini disusun sekali) + registrasi verifikasi best-effort (PDF dibangun ulang bila email kosong); Batal → revoke remote + flash "ikut dicabut"; aksi baru **`verifikasi_ulang`** (lunas ber-invoice tanpa token → daftarkan + flash kode).
 - **Admin `data-pembayaran.php`**: tombol **Verifikasi** (lunas tanpa token) + badge hijau ✓kode (sudah terverifikasi).
-- **Tampil**: `struk.php` box "VERIFIKASI KEASLIAN DOKUMEN" (tautan + kode + QR `qr-code-styling` CDN + fallback) + `tunggu.php` LUNAS box `.verif2` + tombol "Verifikasi Dokumen". PDF tahap ini URL+kode teks (QR di PDF = Fase 3).
+- **Tampil** (20 Sep, disamakan lintas saluran): `struk.php` blok tanda tangan satu kolom "Bagian Keuangan" → **QR polos hitam-putih** (`#verifQr`, `qr-code-styling`) → `Kode: …` → garis → `Almutqon`; tanpa kolom "Penerima / Orang Tua", tanpa judul/tautan verifikasi. `tunggu.php` LUNAS box `.verif2` hanya Kode + QR (judul & paragraf tautan dihapus). **PDF** (`StrukPdf::ttd()` + QR `re f` dari encoder `config/qrcode.php`) = tata letak sama: label → QR → Kode → garis → nama.
 - **Regresi `tests/perbaikan.php` 84/84** (+10: 3 unit klien incl. API-mati graceful, 7 e2e lunas→struk→batal→revoked). E2E mandiri 15/15. Data uji bersih di kedua DB + file PDF uji terhapus.
 
 ### Integrasi (18 Sep): Impor ID Lama → Sinkron (aturan ID diganti nanti)
@@ -454,10 +454,11 @@ Dokumen ini untuk melanjutkan sesi kerja. Update setelah tiap perubahan.
 ### Integrasi (18 Sep): Struk Dikirim sebagai Invoice (tanpa nomor)
 - `verif_register_doc()` kini mengirim `'jenis' => 'invoice'` → struk tak lagi memakan nomor urut / total dokumen / rekap di verif. Regresi tetap **94/94**.
 
-### Integrasi: Rencana Fase 3 (belum dieksekusi — JANGAN kerjakan sebelum perintah)
-- **Hapus tanda tangan statis yang kosong**: blok `.sign` di `pages/bayar/struk.php` ("Penerima / Orang Tua" + "Bagian Keuangan" hardcoded `Almutqon`) dan `StrukPdf::ttd()` + pemanggilannya di `config/pdf.php`. Alasan: tercetak tanpa makna (kolom kosong, nama hardcoded) dan keaslian sudah dijamin verifikasi digital.
-- **Sisakan hanya QR verifikasi** sebagai bukti keaslian: blok verifikasi (tautan + kode + QR) di struk HTML tetap; QR di dalam PDF menyusul (butuh lib QR server-side + dukungan embed gambar di `StrukPdf` yang saat ini teks saja).
-- Saat eksekusi nanti: sesuaikan juga `tests/perbaikan.php` bila ada asersi menyentuh blok `.sign`/TTD, lalu verifikasi ulang struk HTML + PDF + regresi penuh.
+### (20 Sep, DIJALANKAN — lihat Fix #2): tata letak verifikasi seragam done.
+- Kolom tanda tangan kosong "Penerima / Orang Tua" + `StrukPdf::ttd()` dua kolom **dihapus**; diganti satu kolom: label → QR → Kode → garis → nama, di `struk.php`, `tunggu.php`, dan PDF `StrukPdf::ttd()`. Keaslian dijamin QR verifikasi (posisi "Kode" di PDF tidak berubah).
+- Teks blok verifikasi (judul, caption, tautan panjang) dihapus dari web; PDF juga hanya memuat QR + Kode.
+- **QR di PDF** kini di-embed sebagai `re f` hitam (bukan URL/kode teks saja): encoder murni PHP `config/qrcode.php` (tanpa lib/library, terverifikasi full-matrix IDENTICAL vs segno) digambar `StrukPdf` — menuntaskan "Fase 3 QR di PDF" tanpa dependensi gambar.
+- `tests/perbaikan.php:369-371` asersi struk disesuaikan (QR + Kode hadir; judul verif & "Penerima / Orang Tua" absen).
 
 ---
 

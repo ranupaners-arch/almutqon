@@ -3,6 +3,7 @@
 // Membuat struk/kwitansi pembayaran kursus satu halaman (A4 portrait).
 // Font: Helvetica / Helvetica-Bold (core font WinAnsi) — konten struk Latin/Indonesia.
 require_once __DIR__ . '/donasi.php';
+require_once __DIR__ . '/qrcode.php';
 
 if (!function_exists('pdf_winansi')) {
     function pdf_winansi(string $s): string
@@ -62,6 +63,12 @@ class StrukPdf
         $this->lines[] = sprintf('%.2f %.2f m %.2f %.2f l S', $x1, $y1, $x2, $y2);
     }
 
+    private function rect(float $x, float $y, float $w, float $h, array $rgb = [0, 0, 0]): void
+    {
+        $this->lines[] = sprintf('%.3f %.3f %.3f rg', $rgb[0], $rgb[1], $rgb[2]);
+        $this->lines[] = sprintf('%.2f %.2f %.2f %.2f re f', $x, $y, $w, $h);
+    }
+
     private function center(string $s, float $size, bool $bold = false, array $rgb = [0, 0, 0]): void
     {
         $this->y -= $size * 1.75;
@@ -87,23 +94,54 @@ class StrukPdf
         $this->y -= 9;
     }
 
-    // Tanda tangan dua sisi di bawah
-    private function ttd(string $kiri_label, string $kiri_nama, string $kanan_label, string $kanan_nama): void
+    // Tanda tangan terpusat (satu kolom) + QR verifikasi di antara label dan nama bila $verif ada.
+    // Urutan dari atas: label -> QR -> "Kode: ..." -> garis tanda tangan -> nama — menyamai blok
+    // tanda tangan web (pages/bayar/struk.php) agar email, unduhan, dan web seragam.
+    // Nama penandatangan = identitas TETAP 'Admin Almutqon' (bukan nama admin sesi) agar sama
+    // di email, unduhan, dan web — tidak berubah tergantung siapa yang mengeklik/unduh.
+    private function ttd(string $label, string $nama, ?array $verif = null): void
     {
+        $nama = 'Admin Almutqon';
         $this->y -= 26;
-        $kolomKiri = self::MARGIN;
-        $kolomKanan = self::MARGIN + 250;
-        $this->text($kiri_label, $kolomKiri, $this->y, 11, false, [0.25, 0.25, 0.35]);
-        $this->text($kanan_label, $kolomKanan, $this->y, 11, false, [0.25, 0.25, 0.35]);
-        $this->y -= 52;
-        $this->drawLine(self::MARGIN + 6, $this->y + 14, self::MARGIN + 130, $this->y + 14, [0.35, 0.35, 0.4], 0.8);
-        $this->drawLine(self::MARGIN + 250 + 6, $this->y + 14, self::MARGIN + 250 + 130, $this->y + 14, [0.35, 0.35, 0.4], 0.8);
-        $this->text($kiri_nama, $kolomKiri + 6, $this->y + 6, 11.5, true);
-        $this->text($kanan_nama, $kolomKanan + 6, $this->y + 6, 11.5, true);
+        $this->text($label, self::W / 2, $this->y, 11, false, [0.25, 0.25, 0.35], 'C');
+
+        $verifUrl = trim((string) ($verif['url'] ?? ''));
+        if ($verifUrl !== '') {
+            $qrPx = 96.0;
+            $tTop = $this->y - 14;   // tepi atas QR (di bawah label)
+            $qBottom = $tTop - $qrPx;
+            $this->text('Kode: ' . (string) ($verif['code'] ?? ''), self::W / 2, $qBottom - 4, 9.5, true, [0, 0, 0], 'C');
+
+            $modules = qr_matrix($verifUrl, 'M');
+            if ($modules) {
+                $n = count($modules);
+                $total = $n + 8; // quiet zone 4 modul tiap sisi
+                $m = $qrPx / $total;
+                $x0 = (self::W - $qrPx) / 2 + 4 * $m; // QR (beserta quiet zone) di tengah halaman
+                $y0 = $qBottom + 4 * $m;              // pojok kiri-bawah modul (baris bawah)
+                $this->lines[] = '0 0 0 rg';
+                foreach ($modules as $r => $mrow) {
+                    foreach ($mrow as $c => $dark) {
+                        if ($dark) {
+                            $this->lines[] = sprintf('%.2f %.2f %.2f %.2f re f', $x0 + $c * $m, $y0 + ($n - 1 - $r) * $m, $m, $m);
+                        }
+                    }
+                }
+            }
+            $this->y = $qBottom - 34; // sisakan ruang di bawah "Kode" sebelum garis tanda tangan
+        } else {
+            $this->y -= 20;
+        }
+
+        $half = 62.0; // setengah lebar garis tanda tangan (total 124 pt) — di tengah halaman
+        $this->drawLine(self::W / 2 - $half, $this->y + 14, self::W / 2 + $half, $this->y + 14, [0.35, 0.35, 0.4], 0.8);
+        $this->text($nama, self::W / 2, $this->y + 6, 11.5, true, [0, 0, 0], 'C');
     }
 
-    // Bangun dokumen struk. $row = baris `pendaftar`, $pembayaran = config pembayaran_info(), $admin = nama penandatangan
-    public function struk(array $row, array $pembayaran, string $admin): string
+    // Bangun dokumen struk. $row = baris `pendaftar`, $pembayaran = config pembayaran_info(), $admin dipakai tapi
+    // penandatangan SELALU "Admin Almutqon" (identitas tetap, lihat ttd()).
+    // $verif = ['url' => ..., 'code' => ...] — bila ada, QR verifikasi disisipkan di blok tanda tangan (label -> QR -> kode -> garis -> nama).
+    public function struk(array $row, array $pembayaran, string $admin, ?array $verif = null): string
     {
         $biaya = (int) $row['biaya'];
         $lunas = ($row['status_pembayaran'] ?? 'belum') === 'lunas';
@@ -156,10 +194,14 @@ class StrukPdf
         $this->baris('Status', ':  ' . ($lunas ? 'LUNAS' : strtoupper($row['status_pembayaran'] ?? 'belum')), 150, 12.5, true);
         $this->separator();
 
-        // --- Tanda tangan ---
-        $namaPenerima = $row['nama'];
+        // --- Tanda tangan + verifikasi (QR) ---
         $namaAdmin = $admin !== '' ? $admin : 'Admin Almutqon';
-        $this->ttd('Penerima / Orang Tua', $namaPenerima, 'Bagian Keuangan', $namaAdmin);
+        $verifArr = null;
+        $verifUrl = trim((string) ($verif['url'] ?? ''));
+        if ($verifUrl !== '') {
+            $verifArr = ['url' => $verifUrl, 'code' => (string) ($verif['code'] ?? '')];
+        }
+        $this->ttd('Bagian Keuangan', $namaAdmin, $verifArr);
 
         // --- Footer ---
         $this->gap(46);

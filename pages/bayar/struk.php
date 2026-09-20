@@ -63,15 +63,12 @@ $metodeBayar = match ($row['metode_pembayaran']) {
     .status { display:inline-block; padding:2px 14px; border-radius: 999px; font-size:12px; font-weight:800; letter-spacing:1px; }
     .status.lunas { background:#dcfce7; color:#15803d; border:1px solid #86efac; }
     .status.belum { background:#fef3c7; color:#a16207; border:1px solid #fde68a; }
-    .sign { display:flex; justify-content:space-between; margin-top: 46px; }    .sign div { text-align:center; font-size:13px; color:#374151; }
-    .verif { display:flex; gap:18px; align-items:center; border:1px solid #d5d9e0; border-radius:10px; padding:16px 18px; margin:16px 0 4px; background:#f8fafc; }
-    .verif h3 { margin:0 0 6px; font-size:13px; letter-spacing:1px; color:#12203f; }
-    .verif p { margin:4px 0; font-size:13px; color:#4b5563; }
-    .verif__link a { color:#166534; font-weight:600; overflow-wrap:anywhere; }
-    .verif__code strong { font-size:16px; letter-spacing:2px; color:#111; }
-    .verif__qr { flex:none; }
-    .verif__qr svg, .verif__qr canvas { display:block; border-radius:8px; }
-    .sign .space { height:72px; }
+    .sign { display:flex; justify-content:flex-end; margin-top: 30px; }    .sign__col { text-align:center; }
+    .sign__col p { margin: 4px 0; font-size:13px; color:#374151; }
+    .sign__qr { margin: 10px auto 6px; }
+    .sign__qr svg, .sign__qr canvas { display:block; border-radius:8px; margin:0 auto; }
+    .sign__code strong { font-size:16px; letter-spacing:2px; color:#111; }
+    .sign .space { height:36px; }
     .sign .line { border-top:1px solid #111; width:180px; margin:0 auto; }
     .sign b { font-size:14px; }
     .foot { text-align:center; color:#9ca3af; font-size:11px; margin-top: 34px; }
@@ -83,8 +80,7 @@ $metodeBayar = match ($row['metode_pembayaran']) {
     }
     @media (max-width:600px) {
         .receipt { padding: 22px 18px; }
-        .sign { flex-direction: column; gap: 34px; }
-        .verif { flex-direction: column; }
+        .sign { justify-content: center; }
     }
 </style>
 </head>
@@ -127,34 +123,22 @@ $metodeBayar = match ($row['metode_pembayaran']) {
             <div class="row total"><span>Status</span><span class="status <?= $lunas ? 'lunas' : 'belum' ?>"><?= $lunas ? 'LUNAS' : strtoupper($row['status_pembayaran'] ?? 'belum') ?></span></div>
         </div>
 
+        <?php $verifUrl = (string) ($row['verif_url'] ?? ''); $verifCode = (string) ($row['verif_code'] ?? ''); ?>
+
         <div class="sign">
-            <div>
-                <p>Penerima / Orang Tua</p>
-                <div class="space"></div>
-                <div class="line"></div>
-                <b><?= htmlspecialchars($row['nama']) ?></b>
-            </div>
-            <div>
+            <div class="sign__col">
                 <p>Bagian Keuangan</p>
+                <?php if ($verifUrl !== ''): ?>
+                <div class="sign__qr" id="verifQr" role="img" aria-label="QR verifikasi dokumen"></div>
+                <p class="sign__code">Kode: <strong><?= htmlspecialchars($verifCode) ?></strong></p>
+                <?php endif; ?>
                 <div class="space"></div>
                 <div class="line"></div>
-                <b>Almutqon</b>
+                <b>Admin Almutqon</b>
             </div>
         </div>
 
-        <?php $verifUrl = (string) ($row['verif_url'] ?? ''); $verifCode = (string) ($row['verif_code'] ?? ''); ?>
         <?php if ($verifUrl !== ''): ?>
-        <div class="verif">
-            <div class="verif__info">
-                <h3>VERIFIKASI KEASLIAN DOKUMEN</h3>
-                <p>Pindai QR atau buka tautan berikut untuk memastikan struk ini asli dan masih berlaku.</p>
-                <p class="verif__link"><a href="<?= htmlspecialchars($verifUrl) ?>" target="_blank" rel="noopener"><?= htmlspecialchars($verifUrl) ?></a></p>
-                <?php if ($verifCode !== ''): ?>
-                <p class="verif__code">Kode: <strong><?= htmlspecialchars($verifCode) ?></strong></p>
-                <?php endif; ?>
-            </div>
-            <div class="verif__qr" id="verifQr" role="img" aria-label="QR verifikasi dokumen"></div>
-        </div>
         <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
         <script>
         (function () {
@@ -162,14 +146,14 @@ $metodeBayar = match ($row['metode_pembayaran']) {
             if (!el || typeof QRCodeStyling === 'undefined') return;
             try {
                 new QRCodeStyling({
-                    width: 130, height: 130,
+                    width: 110, height: 110,
                     data: <?= json_encode($verifUrl) ?>,
-                    dotsOptions: { color: '#12203f', type: 'rounded' },
+                    dotsOptions: { color: '#000000', type: 'square' },
                     backgroundOptions: { color: '#ffffff' },
-                    cornersSquareOptions: { color: '#12203f' },
-                    cornersDotOptions: { color: '#F59E0B' }
+                    cornersSquareOptions: { color: '#000000', type: 'square' },
+                    cornersDotOptions: { color: '#000000', type: 'square' }
                 }).append(el);
-            } catch (e) { /* tautan + kode tetap tampil */ }
+            } catch (e) { /* kode tetap tampil */ }
         })();
         </script>
         <?php endif; ?>

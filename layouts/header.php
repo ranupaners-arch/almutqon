@@ -28,7 +28,8 @@ if ($currentUser && isset($currentUser['id'])) {
     <meta property="og:description" content="Membuka akses pendidikan, memperluas kesempatan belajar, dan membantu generasi muda tumbuh dengan ilmu, karakter, dan masa depan yang lebih baik.">
     
     <!-- Favicon & Fonts -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230F766E'/><path d='M50 18 L56 42 L80 44 L60 58 L66 80 L50 66 L34 80 L40 58 L20 44 L44 42 Z' fill='white'/></svg>">
+    <link rel="icon" type="image/png" href="/assets/favicon.png?v=20260919a">
+    <link rel="shortcut icon" href="/assets/favicon.ico?v=20260919a">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">

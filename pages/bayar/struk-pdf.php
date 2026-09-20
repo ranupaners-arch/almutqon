@@ -21,8 +21,14 @@ if ($row === false) {
 
 $adminNama = $_SESSION['user']['name'] ?? 'Admin Almutqon';
 
+$verif = null;
+$verifUrl = trim((string) ($row['verif_url'] ?? ''));
+if ($verifUrl !== '') {
+    $verif = ['url' => $verifUrl, 'code' => (string) ($row['verif_code'] ?? '')];
+}
+
 $struk = new StrukPdf();
-$pdf   = $struk->struk($row, pembayaran_info(), $adminNama);
+$pdf   = $struk->struk($row, pembayaran_info(), $adminNama, $verif);
 
 header('Content-Type: application/pdf');
 header('Content-Disposition: attachment; filename="struk-' . preg_replace('/[^A-Za-z0-9.-]/', '_', $no) . '.pdf"');
