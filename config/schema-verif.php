@@ -1,7 +1,7 @@
 <?php
 // config/schema-verif.php — migrasi idempoten: rujukan dokumen verifikasi di tabel `pendaftar`
 // Kolom `verif_token`/`verif_code`/`verif_url` diisi saat admin konfirmasi LUNAS
-// (didaftarkan ke API internal verif-almt v1). Wajib dijalankan juga di DB live.
+// (didaftarkan ke API internal verif.almutqon v1). Wajib dijalankan juga di DB live.
 // Jalankan: php config/schema-verif.php
 require_once __DIR__ . '/database.php';
 

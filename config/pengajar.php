@@ -35,7 +35,7 @@ function nama_tanpa_id(string $nama): string
     return trim((string) preg_replace('/\s*\([^()]*\)$/', '', $nama));
 }
 
-// Petakan peran almutqon ke role staff verif-almt (sinkron ID pengajar).
+// Petakan peran almutqon ke role staff verif.almutqon (sinkron ID pengajar).
 // Aturan: direktur tetap direktur; koordinator/pengajar menjadi staff biasa
 // (menghormati matriks izin verif: admin tak boleh mengelola direktur).
 function peran_to_verif_role(string $peran): string

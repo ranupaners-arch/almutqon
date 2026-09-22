@@ -1,5 +1,5 @@
 <?php
-// config/verif-client.php — klien API internal verif-almt v1 (Fase 2)
+// config/verif-client.php — klien API internal verif.almutqon v1 (Fase 2)
 // Konfigurasi dari .env: VERIF_API_URL + VERIF_API_TOKEN (JAGA RAHASIA).
 // Prinsip: gagal API TIDAK PERNAH fatal — selalu kembalikan array + error_log,
 // alur LUNAS di sisi almutqon tetap jalan (verifikasi bisa diulang dari admin).
@@ -96,7 +96,7 @@ function verif_api(string $action, array $fields, ?string $pdfPath = null, strin
 // $row = baris pendaftar (wajib: id, no_invoice, nama, tanggal_bayar). $pdfBytes = isi PDF struk
 // (tanpa QR) — dipakai sebagai fallback bila PDF ber-QR gagal dibuat.
 //
-// Urutan (agar PDF arsip di verif-almt BER-QR, sama dengan struk unduhan/email):
+// Urutan (agar PDF arsip di verif.almutqon BER-QR, sama dengan struk unduhan/email):
 //   1) create dokumen TANPA pdf → dapat token + verify_url
 //   2) generate ulang PDF struk dengan QR (berisi verify_url)
 //   3) replace_pdf: unggah PDF ber-QR (fallback: unggah $pdfBytes apa adanya)
@@ -154,7 +154,7 @@ function verif_register_doc(PDO $pdo, int $pendaftarId, array $row, string $admi
     return ['ok' => true, 'skipped' => false, 'code' => $verifCode, 'url' => $verifUrl, 'error' => ''];
 }
 
-// Ganti PDF dokumen di verif-almt via aksi replace_pdf (best-effort).
+// Ganti PDF dokumen di verif.almutqon via aksi replace_pdf (best-effort).
 // Return: ['ok'=>bool, 'error'=>string]
 function verif_replace_pdf(string $token, string $pdfBytes): array
 {

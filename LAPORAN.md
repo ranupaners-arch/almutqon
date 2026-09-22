@@ -321,7 +321,7 @@ Container halaman lebar `1240px` (`--container`).
 - **Kontrol UI**: partial `layouts/theme-switch.php` merender segmen
   Terang/Gelap/Sistem (SVG inline, `role="radiogroup"`) dan skrip `fetch`
   ke `/api/theme.php` bila user klik — perilaku JS identik dengan
-  `verif-almt/app/Pages/_theme_switch.php`.
+  `verif.almutqon/app/Pages/_theme_switch.php`.
 - **Dark CSS**: `css/base.css:103` memilih selector
   `:root[data-theme='dark'] { ... }` dan `color-scheme: dark` di form
   elements agar form native ikut gelap.
@@ -350,7 +350,7 @@ bagian analisis arsitektur di atas.
   LUNAS oleh admin memunculkan struk PDF
   (`pages/bayar/struk.php` → `strukturPDF` di `config/pdf.php`) dan
   halaman tunggu (`pages/bayar/tunggu.php`).
-- **Sinkronisasi dengan `verif-almt`** via `config/verif-client.php`:
+- **Sinkronisasi dengan `verif.almutqon`** via `config/verif-client.php`:
   - `verif_register_doc()` (admin LUNAS) → POST `/api/v1/dokumen.php`
     di almutqon-verif, PDF struk dikirim, token 6-digit disimpan ke
     `pendaftar.verif_token/code/url`.

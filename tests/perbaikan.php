@@ -380,7 +380,7 @@ if ($pdo) {
 
         // Bersih-bersih kedua DB + file PDF uji.
         if (!empty($vd['pdf_path'])) {
-            @unlink('/Users/mac/Herd/verif-almt/storage/uploads/' . basename((string) $vd['pdf_path']));
+            @unlink('/Users/mac/Herd/verif.almutqon/storage/uploads/' . basename((string) $vd['pdf_path']));
         }
         if (!empty($vd['id'])) {
             $verPdo->prepare('DELETE FROM activity_log WHERE dokumen_id=?')->execute([(int) $vd['id']]);

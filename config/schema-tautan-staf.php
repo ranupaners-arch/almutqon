@@ -1,5 +1,5 @@
 <?php
-// config/schema-tautan-staf.php — migrasi idempoten: tautan personel ke staff verif-almt
+// config/schema-tautan-staf.php — migrasi idempoten: tautan personel ke staff verif.almutqon
 // Kolom `users.verif_staff_id` = id baris `staff` di db_almutqon-verif (lintas DB: tanpa FK).
 // Diisi skrip tools/padankan-staf.php + hook data-pengajar. Wajib juga di DB live.
 // Jalankan: php config/schema-tautan-staf.php

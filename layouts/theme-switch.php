@@ -1,6 +1,6 @@
 <?php
 // layouts/theme-switch.php — kontrol tema bersama (Terang/Gelap/Sistem).
-// Model seragam dengan verif-almt/app/Pages/_theme_switch.php (markup, kelas
+// Model seragam dengan verif.almutqon/app/Pages/_theme_switch.php (markup, kelas
 // CSS, dan perilaku JS identik). Markup + skrip dimuat sekali per request.
 //
 // Variabel opsional sebelum include:

@@ -1,6 +1,6 @@
 <?php
 // tools/impor-verif.php — impor sekali jalan: daftarkan invoice LUNAS lama yang belum
-// terverifikasi ke API internal verif-almt v1 agar ID sinkron (no_surat = no_invoice).
+// terverifikasi ke API internal verif.almutqon v1 agar ID sinkron (no_surat = no_invoice).
 // Idempoten & aman diulang: baris yang sudah punya verif_token dilewati; API create
 // juga idempoten by no_surat. Gagal satu baris → dicatat, lanjut baris berikut.
 // Mode --perbaiki: untuk baris yang SUDAH punya verif_token, cek dokumennya masih ada
