@@ -2,6 +2,24 @@
 
 Catatan perbaikan bug. Terbaru di ATAS. Ditulis sesudah fix terverifikasi.
 
+### Fix #4 — Gambar QRIS donasi 404 (referensi `.png`, file asli `.jpeg`)
+
+**Gejala:** Halaman tunggu pembayaran & modal donasi menampilkan gambar QRIS kosong (ikon rusak/404) saat metode QRIS dipilih atau status LUNAS ditampilkan.
+
+**Akar:** `.env:17` menunjuk `DONASI_QRIS_GAMBAR=/assets/QRIS.png`, tapi file di disk bernama `assets/QRIS.jpeg` — nama file diganti/diperbarui (mtime 22 Sep) tanpa mengikuti nama yang dikonfigurasi. Tidak ada satupun referensi `.jpeg` di kode, jadi `.jpeg` praktis yatim dan `.png` putus.
+
+| | |
+|---|---|
+| **Tanggal** | 2026-09-22 |
+| **File** | `assets/QRIS.jpeg` (rename → `.png`) |
+| **Masalah** | `pages/bayar/tunggu.php:212` dan `js/ui.js:720` merender `<img src="/assets/QRIS.png">` yang tidak ada → 404; `.jpeg` tak dirujuk siapa pun |
+| **Akar** | Mismatch nama file vs nilai `.env` (`DONASI_QRIS_GAMBAR`); rename file tak diikuti update referensi |
+| **Fix** | Rename `assets/QRIS.jpeg` → `assets/QRIS.png` (memihak konfigurasi + docs `CATATAN.md:95`, `LAPORAN.md` yang sudah menulis `.png`; tanpa ubah `.env`) |
+| **Verifikasi** | `ls assets/QRIS.png` ada (154.568 B, sama dengan `.jpeg` lama); `grep .jpeg` → 0 referensi; lint semua 109 PHP bersih |
+| **Pelajaran** | Saat mengganti nama/reformat file aset, cek dulu referensi konfigurasi & docs — rename file yang tak sinkron menciptakan dua masalah (file yatim + referensi putus) |
+| **Log Keyword** | QRIS, donasi, DONASI_QRIS_GAMBAR, 404, gambar |
+| **Deploy** | PENDING verifikasi browser (loading QRIS di tunggu.php & modal donasi) |
+
 ### Fix #3 — Nama penandatangan struk tidak konsisten antarsaluran
 
 **Gejala:** Struk yang dikirim email, yang diunduh (`struk-pdf.php`), dan yang ditampilkan web (`struk.php`) memuat nama berbeda di bawah garis "Bagian Keuangan" — email memakai nama admin sesi, unduhan tanpa login "Admin Almutqon", web memakai merek "Almutqon". Terlihat seperti dokumen berbeda padahal isi lain identik.

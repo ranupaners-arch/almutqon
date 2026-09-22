@@ -11,7 +11,7 @@ Dokumen ini untuk melanjutkan sesi kerja. Update setelah tiap perubahan.
 | Lokal | `http://almutqon.test` (Laravel Herd), root `/Users/mac/Herd/almutqon` |
 | DB | `127.0.0.1` / `db_almutqon-website` / user `root` / password kosong |
 | File DB | `config/database.php` + `.env` (`DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`) — kredensial sudah tidak hardcoded |
-| Admin | `admin.almutqon@gmail.com` / `[ADMIN-PASSWORD]` (diganti 15 Sep) |
+| Admin | `admin.almutqon@gmail.com` / `Almutqon2026!` (direset 22 Sep — ganti lagi via `admin/ganti-password.php` setelah login) |
 | Daftar admin | `$ADMIN_EMAILS` di `config/auth.php` (wajib email sudah ada di tabel `users`) |
 | Situs live (beda!) | `almutqon-verif.infinityfreeapp.com` — perbaikan lokal TIDAK otomatis ada di sana |
 
