@@ -601,6 +601,13 @@ document.addEventListener('DOMContentLoaded', () => {
         donationModal.querySelectorAll('.preset-btn').forEach((b) => {
             b.classList.toggle('active', b.dataset.amount === '100000');
         });
+        donationModal.querySelectorAll('input[name="payment"]').forEach((r) => { r.checked = false; });
+        donationModal.querySelectorAll('input[name="bank_tujuan"]').forEach((r) => { r.checked = false; });
+        donationModal.querySelectorAll('input[name="ewallet_tujuan"]').forEach((r) => { r.checked = false; });
+        donationModal.querySelectorAll('[data-pay-panel]').forEach((panel) => {
+            panel.hidden = true;
+            panel.querySelectorAll('input, select').forEach((el) => { el.disabled = true; });
+        });
         donationModal.classList.add('active');
         donationModal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
@@ -660,7 +667,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!jumlah || jumlah < 10000) return flash(customAmountInput, 'Nominal donasi minimal Rp10.000.');
             }
 
-            const metode = donationModal.querySelector('input[name="payment"]:checked').value;
+            const paymentRadio = donationModal.querySelector('input[name="payment"]:checked');
+            if (!paymentRadio) {
+                alert('Silakan pilih metode pembayaran terlebih dahulu.');
+                const firstRadio = donationModal.querySelector('input[name="payment"]');
+                if (firstRadio) firstRadio.focus();
+                return;
+            }
+
+            const metode = paymentRadio.value;
             const token = (donationModal.querySelector('input[name="csrf_token"]') || {}).value || '';
 
             const fd = new FormData();
@@ -671,10 +686,22 @@ document.addEventListener('DOMContentLoaded', () => {
             fd.append('metode', metode);
             if (metode === 'bank') {
                 const r = donationModal.querySelector('[data-pay-panel="bank"] input[name="bank_tujuan"]:checked');
-                if (r) fd.append('bank_tujuan', r.value);
+                if (!r) {
+                    alert('Silakan pilih bank tujuan donasi.');
+                    const firstBank = donationModal.querySelector('[data-pay-panel="bank"] input[name="bank_tujuan"]');
+                    if (firstBank) firstBank.focus();
+                    return;
+                }
+                fd.append('bank_tujuan', r.value);
             } else if (metode === 'ewallet') {
                 const r = donationModal.querySelector('[data-pay-panel="ewallet"] input[name="ewallet_tujuan"]:checked');
-                if (r) fd.append('ewallet_tujuan', r.value);
+                if (!r) {
+                    alert('Silakan pilih e-wallet tujuan donasi.');
+                    const firstEw = donationModal.querySelector('[data-pay-panel="ewallet"] input[name="ewallet_tujuan"]');
+                    if (firstEw) firstEw.focus();
+                    return;
+                }
+                fd.append('ewallet_tujuan', r.value);
             }
 
             donationSubmit.disabled = true;
@@ -715,9 +742,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const methods = group.querySelectorAll('input[type="radio"][name$="_metode_bayar"], input[type="radio"][name="payment"]');
         const sync = () => {
             const checked = group.querySelector('input[type="radio"][name$="_metode_bayar"]:checked, input[type="radio"][name="payment"]:checked');
-            const val = checked ? checked.value : 'bank';
+            const val = checked ? checked.value : '';
             group.querySelectorAll('[data-pay-panel]').forEach((panel) => {
-                const active = panel.dataset.payPanel === val;
+                const active = val !== '' && panel.dataset.payPanel === val;
                 panel.hidden = !active;
                 panel.querySelectorAll('input, select').forEach((el) => { el.disabled = !active; });
             });

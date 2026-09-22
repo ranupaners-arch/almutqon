@@ -93,7 +93,14 @@ function verif_api(string $action, array $fields, ?string $pdfPath = null, strin
 }
 
 // Daftarkan struk LUNAS sebagai dokumen terverifikasi + simpan rujukan ke pendaftar.
-// $row = baris pendaftar (wajib: id, no_invoice, nama, tanggal_bayar). $pdfBytes = isi PDF struk.
+// $row = baris pendaftar (wajib: id, no_invoice, nama, tanggal_bayar). $pdfBytes = isi PDF struk
+// (tanpa QR) — dipakai sebagai fallback bila PDF ber-QR gagal dibuat.
+//
+// Urutan (agar PDF arsip di verif-almt BER-QR, sama dengan struk unduhan/email):
+//   1) create dokumen TANPA pdf → dapat token + verify_url
+//   2) generate ulang PDF struk dengan QR (berisi verify_url)
+//   3) replace_pdf: unggah PDF ber-QR (fallback: unggah $pdfBytes apa adanya)
+// Semua langkah pasca-create best-effort: kegagalan unggah tak membatalkan pendaftaran.
 // Return: ['ok'=>bool, 'skipped'=>bool, 'code'=>string, 'url'=>string, 'error'=>string]
 function verif_register_doc(PDO $pdo, int $pendaftarId, array $row, string $adminNama, string $pdfBytes): array
 {
@@ -118,26 +125,56 @@ function verif_register_doc(PDO $pdo, int $pendaftarId, array $row, string $admi
         'penandatangan' => $adminNama !== '' ? $adminNama : 'Admin Almutqon',
     ];
 
-    $tmp = tempnam(sys_get_temp_dir(), 'amqstruk');
-    $tmpPdf = $tmp . '.pdf';
-    if (!@rename($tmp, $tmpPdf) || file_put_contents($tmpPdf, $pdfBytes) === false) {
-        @unlink($tmp);
-        error_log('[verif-api] gagal menyiapkan PDF sementara');
-        return ['ok' => false, 'skipped' => false, 'code' => '', 'url' => '', 'error' => 'gagal menyiapkan PDF'];
-    }
-    try {
-        $res = verif_api('create', $fields, $tmpPdf);
-    } finally {
-        @unlink($tmpPdf);
-    }
+    // 1) Buat dokumen TANPA pdf — URL verifikasi baru diketahui setelah create.
+    $res = verif_api('create', $fields);
 
     if (!$res['ok']) {
         return ['ok' => false, 'skipped' => $res['skipped'], 'code' => '', 'url' => '', 'error' => $res['error']];
     }
     $data = is_array($res['data']) ? $res['data'] : [];
+    $verifUrl = (string) ($data['verify_url'] ?? '');
+    $verifCode = (string) ($data['code_6digit'] ?? '');
     $stmt = $pdo->prepare('UPDATE pendaftar SET verif_token = ?, verif_code = ?, verif_url = ? WHERE id = ?');
-    $stmt->execute([(string) ($data['token'] ?? ''), (string) ($data['code_6digit'] ?? ''), (string) ($data['verify_url'] ?? ''), $pendaftarId]);
-    return ['ok' => true, 'skipped' => false, 'code' => (string) ($data['code_6digit'] ?? ''), 'url' => (string) ($data['verify_url'] ?? ''), 'error' => ''];
+    $stmt->execute([(string) ($data['token'] ?? ''), $verifCode, $verifUrl, $pendaftarId]);
+
+    // 2) + 3) Generate PDF ber-QR lalu unggah (best-effort; fallback $pdfBytes apa adanya).
+    $upload = $pdfBytes;
+    if ($verifUrl !== '') {
+        try {
+            require_once __DIR__ . '/pdf.php';
+            require_once __DIR__ . '/pembayaran.php';
+            $upload = (new StrukPdf())->struk($row, pembayaran_info(), $adminNama, ['url' => $verifUrl, 'code' => $verifCode]);
+        } catch (\Throwable $t) {
+            error_log('[verif-api] gagal membuat PDF ber-QR: ' . $t->getMessage());
+            $upload = $pdfBytes;
+        }
+    }
+    verif_replace_pdf((string) ($data['token'] ?? ''), $upload);
+
+    return ['ok' => true, 'skipped' => false, 'code' => $verifCode, 'url' => $verifUrl, 'error' => ''];
+}
+
+// Ganti PDF dokumen di verif-almt via aksi replace_pdf (best-effort).
+// Return: ['ok'=>bool, 'error'=>string]
+function verif_replace_pdf(string $token, string $pdfBytes): array
+{
+    $tmp = tempnam(sys_get_temp_dir(), 'amqstruk');
+    $tmpPdf = $tmp . '.pdf';
+    if (!@rename($tmp, $tmpPdf) || file_put_contents($tmpPdf, $pdfBytes) === false) {
+        @unlink($tmp);
+        error_log('[verif-api] gagal menyiapkan PDF sementara');
+        return ['ok' => false, 'error' => 'gagal menyiapkan PDF'];
+    }
+    try {
+        $res = verif_api('replace_pdf', ['token' => $token], $tmpPdf);
+    } finally {
+        @unlink($tmpPdf);
+    }
+    if (!$res['ok']) {
+        error_log('[verif-api] replace_pdf gagal: ' . $res['error']);
+        return ['ok' => false, 'error' => $res['error']];
+    }
+    return ['ok' => true, 'error' => ''];
 }
 
 // Cerminkan personel (baris users ber-peran pengajar) ke staff verif (best-effort).

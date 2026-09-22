@@ -28,7 +28,7 @@ $jenis_kelamin = trim($_POST['jenis_kelamin'] ?? '');
 $usia = (int) ($_POST['usia'] ?? 0);
 $whatsapp = trim($_POST['whatsapp'] ?? '');
 $metode = trim($_POST['metode'] ?? '');
-$metodeBayar = $_POST['metode_bayar'] ?? 'bank';
+$metodeBayar = $_POST['metode_bayar'] ?? '';
 $bankTujuan = trim($_POST['bank_tujuan'] ?? '');
 $ewalletTujuan = trim($_POST['ewallet_tujuan'] ?? '');
 $alamat = trim($_POST['alamat'] ?? '');
@@ -41,17 +41,24 @@ if (!in_array($program, ['offline', 'online', 'dauroh'], true)) {
     exit;
 }
 
-if (!in_array($metodeBayar, ['bank', 'qris', 'ewallet'], true)) {
-    echo json_encode(['success' => false, 'message' => 'Metode pembayaran tidak dikenali.']);
+if ($metodeBayar === '' || !in_array($metodeBayar, ['bank', 'qris', 'ewallet'], true)) {
+    echo json_encode(['success' => false, 'message' => 'Pilih metode pembayaran terlebih dahulu.']);
     exit;
 }
 
 // Kanal spesifik: bank (BSI/BRI/KROM/SEABANK) atau e-wallet (ShopeePay/DANA/GoPay).
-// Nilai tak dikenal → jatuh ke default (kolom dari .env) alih-alih menolak pengajuan.
 $kanal = '';
 if ($metodeBayar === 'bank') {
+    if ($bankTujuan === '' || !isset(donasi_bank_channels()[$bankTujuan])) {
+        echo json_encode(['success' => false, 'message' => 'Pilih bank tujuan pembayaran.']);
+        exit;
+    }
     $kanal = donasi_resolve_bank($bankTujuan);
 } elseif ($metodeBayar === 'ewallet') {
+    if ($ewalletTujuan === '' || !isset(donasi_ewallet_channels()[$ewalletTujuan])) {
+        echo json_encode(['success' => false, 'message' => 'Pilih e-wallet tujuan pembayaran.']);
+        exit;
+    }
     $kanal = donasi_resolve_ewallet($ewalletTujuan);
 }
 

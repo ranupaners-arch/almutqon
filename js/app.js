@@ -325,10 +325,34 @@ window.app = {
 
     submitPendaftar(form, program) {
         try {
-            const token = form.querySelector('input[name="csrf_token"]').value;
-            const fd = new FormData(form);
+            const token = (form.querySelector('input[name="csrf_token"]') || {}).value || '';
             const bayarRadio = form.querySelector('input[type="radio"][name$="_metode_bayar"]:checked');
-            fd.append('metode_bayar', (bayarRadio && bayarRadio.value) || 'bank');
+            if (!bayarRadio) {
+                alert('Silakan pilih metode pembayaran terlebih dahulu.');
+                const firstRadio = form.querySelector('input[type="radio"][name$="_metode_bayar"]');
+                if (firstRadio) firstRadio.focus();
+                return;
+            }
+            if (bayarRadio.value === 'bank') {
+                const bankRadio = form.querySelector('[data-pay-panel="bank"] input[name="bank_tujuan"]:checked');
+                if (!bankRadio) {
+                    alert('Silakan pilih bank tujuan transfer.');
+                    const firstBank = form.querySelector('[data-pay-panel="bank"] input[name="bank_tujuan"]');
+                    if (firstBank) firstBank.focus();
+                    return;
+                }
+            } else if (bayarRadio.value === 'ewallet') {
+                const ewRadio = form.querySelector('[data-pay-panel="ewallet"] input[name="ewallet_tujuan"]:checked');
+                if (!ewRadio) {
+                    alert('Silakan pilih e-wallet tujuan transfer.');
+                    const firstEw = form.querySelector('[data-pay-panel="ewallet"] input[name="ewallet_tujuan"]');
+                    if (firstEw) firstEw.focus();
+                    return;
+                }
+            }
+
+            const fd = new FormData(form);
+            fd.append('metode_bayar', bayarRadio.value);
             fd.append('program', program);
             fetch('/api/pendaftar.php', { method: 'POST', body: fd, headers: { 'X-CSRF-Token': token } })
                 .then((r) => r.json())
@@ -340,7 +364,7 @@ window.app = {
                     form.reset();
                     const map = { offline: 'closeOfflineModal', online: 'closeOnlineModal', dauroh: 'closeDaurohModal' };
                     if (this[map[program]]) this[map[program]]();
-                    window.location.href = data.redirect || '/pages/akun/profil.php';
+                    window.location.href = data.redirect || data.status_url || '/pages/akun/profil.php';
                 })
                 .catch(() => alert('Terjadi kesalahan saat mengirim. Coba lagi.'));
         } catch (err) {

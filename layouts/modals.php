@@ -37,26 +37,26 @@ $payLogo = function (string $key) use ($__payBrand): string {
 };
 $renderPayPanels = function (string $prefix) use ($__payBanks, $__payWallets, $payLogo): string {
     ob_start(); ?>
-    <div class="auth__input-group" data-pay-panel="bank">
+    <div class="auth__input-group" data-pay-panel="bank" hidden>
         <label id="<?= $prefix ?>_bank_label">Pilih Bank Tujuan *</label>
         <div class="paychan" role="radiogroup" aria-labelledby="<?= $prefix ?>_bank_label">
-            <?php $first = true; foreach ($__payBanks as $key => $b): ?>
+            <?php foreach ($__payBanks as $key => $b): ?>
                 <label class="paychan__item">
-                    <input type="radio" name="bank_tujuan" value="<?= htmlspecialchars($key, ENT_QUOTES) ?>" required<?= $first ? ' checked' : '' ?>>
+                    <input type="radio" name="bank_tujuan" value="<?= htmlspecialchars($key, ENT_QUOTES) ?>" required>
                     <span class="paychan__card"><?= $payLogo($key) ?><span class="paychan__name"><?= htmlspecialchars($b['label'], ENT_QUOTES) ?></span></span>
                 </label>
-            <?php $first = false; endforeach; ?>
+            <?php endforeach; ?>
         </div>
     </div>
     <div class="auth__input-group" data-pay-panel="ewallet" hidden>
         <label id="<?= $prefix ?>_ewallet_label">Pilih E-Wallet *</label>
         <div class="paychan" role="radiogroup" aria-labelledby="<?= $prefix ?>_ewallet_label">
-            <?php $first = true; foreach ($__payWallets as $key => $w): ?>
+            <?php foreach ($__payWallets as $key => $w): ?>
                 <label class="paychan__item">
-                    <input type="radio" name="ewallet_tujuan" value="<?= htmlspecialchars($key, ENT_QUOTES) ?>" required<?= $first ? ' checked' : '' ?>>
+                    <input type="radio" name="ewallet_tujuan" value="<?= htmlspecialchars($key, ENT_QUOTES) ?>" required>
                     <span class="paychan__card"><?= $payLogo($key) ?><span class="paychan__name"><?= htmlspecialchars($w['label'], ENT_QUOTES) ?></span></span>
                 </label>
-            <?php $first = false; endforeach; ?>
+            <?php endforeach; ?>
         </div>
     </div>
     <?php return (string) ob_get_clean();
@@ -92,18 +92,18 @@ $renderPayPanels = function (string $prefix) use ($__payBanks, $__payWallets, $p
                 <div class="row"><span>Keterangan</span><span class="pb-ket" id="offline_ket">Privat · ±2 jam / sesi (Rp318.000 / jam)</span></div>
             </div>
             <div class="modal__section" style="margin-bottom: 16px;" data-pay-group="offline">
-                <h3 class="modal__label">Metode Pembayaran</h3>
+                <h3 class="modal__label">Metode Pembayaran *</h3>
                 <div class="modal__methods">
                     <label class="method">
-                        <input type="radio" name="offline_metode_bayar" value="bank" checked>
+                        <input type="radio" name="offline_metode_bayar" value="bank" required>
                         <span class="method__content"><span class="material-symbols-rounded">account_balance</span><span>Transfer Bank</span></span>
                     </label>
                     <label class="method">
-                        <input type="radio" name="offline_metode_bayar" value="qris">
+                        <input type="radio" name="offline_metode_bayar" value="qris" required>
                         <span class="method__content"><span class="material-symbols-rounded">qr_code</span><span>QRIS</span></span>
                     </label>
                     <label class="method">
-                        <input type="radio" name="offline_metode_bayar" value="ewallet">
+                        <input type="radio" name="offline_metode_bayar" value="ewallet" required>
                         <span class="method__content"><span class="material-symbols-rounded">wallet</span><span>E-Wallet</span></span>
                     </label>
                 </div>
@@ -145,18 +145,18 @@ $renderPayPanels = function (string $prefix) use ($__payBanks, $__payWallets, $p
                 <div class="row"><span>Keterangan</span><span class="pb-ket" id="online_ket">Privat · ±90 menit / sesi (Rp199.000 / jam)</span></div>
             </div>
             <div class="modal__section" style="margin-bottom: 16px;" data-pay-group="online">
-                <h3 class="modal__label">Metode Pembayaran</h3>
+                <h3 class="modal__label">Metode Pembayaran *</h3>
                 <div class="modal__methods">
                     <label class="method">
-                        <input type="radio" name="online_metode_bayar" value="bank" checked>
+                        <input type="radio" name="online_metode_bayar" value="bank" required>
                         <span class="method__content"><span class="material-symbols-rounded">account_balance</span><span>Transfer Bank</span></span>
                     </label>
                     <label class="method">
-                        <input type="radio" name="online_metode_bayar" value="qris">
+                        <input type="radio" name="online_metode_bayar" value="qris" required>
                         <span class="method__content"><span class="material-symbols-rounded">qr_code</span><span>QRIS</span></span>
                     </label>
                     <label class="method">
-                        <input type="radio" name="online_metode_bayar" value="ewallet">
+                        <input type="radio" name="online_metode_bayar" value="ewallet" required>
                         <span class="method__content"><span class="material-symbols-rounded">wallet</span><span>E-Wallet</span></span>
                     </label>
                 </div>
@@ -202,18 +202,18 @@ $renderPayPanels = function (string $prefix) use ($__payBanks, $__payWallets, $p
                 <div class="row"><span>Keterangan</span><span class="pb-ket" id="dauroh_ket">Online · 70.000 / orang × 40 peserta</span></div>
             </div>
             <div class="modal__section" style="margin-bottom: 16px;" data-pay-group="dauroh">
-                <h3 class="modal__label">Metode Pembayaran</h3>
+                <h3 class="modal__label">Metode Pembayaran *</h3>
                 <div class="modal__methods">
                     <label class="method">
-                        <input type="radio" name="dauroh_metode_bayar" value="bank" checked>
+                        <input type="radio" name="dauroh_metode_bayar" value="bank" required>
                         <span class="method__content"><span class="material-symbols-rounded">account_balance</span><span>Transfer Bank</span></span>
                     </label>
                     <label class="method">
-                        <input type="radio" name="dauroh_metode_bayar" value="qris">
+                        <input type="radio" name="dauroh_metode_bayar" value="qris" required>
                         <span class="method__content"><span class="material-symbols-rounded">qr_code</span><span>QRIS</span></span>
                     </label>
                     <label class="method">
-                        <input type="radio" name="dauroh_metode_bayar" value="ewallet">
+                        <input type="radio" name="dauroh_metode_bayar" value="ewallet" required>
                         <span class="method__content"><span class="material-symbols-rounded">wallet</span><span>E-Wallet</span></span>
                     </label>
                 </div>
@@ -273,24 +273,24 @@ window.AMQ_RP = n => 'Rp' + n.toLocaleString('id-ID');
 </script>
             </div>
             <div class="modal__section" data-pay-group="donasi">
-                <h3 class="modal__label">Metode Pembayaran</h3>
+                <h3 class="modal__label">Metode Pembayaran *</h3>
                 <div class="modal__methods">
                     <label class="method">
-                        <input type="radio" name="payment" value="bank" checked>
+                        <input type="radio" name="payment" value="bank" required>
                         <span class="method__content">
                             <span class="material-symbols-rounded">account_balance</span>
                             <span>Transfer Bank</span>
                         </span>
                     </label>
                     <label class="method">
-                        <input type="radio" name="payment" value="qris">
+                        <input type="radio" name="payment" value="qris" required>
                         <span class="method__content">
                             <span class="material-symbols-rounded">qr_code</span>
                             <span>QRIS</span>
                         </span>
                     </label>
                     <label class="method">
-                        <input type="radio" name="payment" value="ewallet">
+                        <input type="radio" name="payment" value="ewallet" required>
                         <span class="method__content">
                             <span class="material-symbols-rounded">wallet</span>
                             <span>E-Wallet</span>

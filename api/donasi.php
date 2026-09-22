@@ -36,14 +36,22 @@ if ($jumlah < 10000) {
 }
 
 if (!in_array($metode, ['bank', 'qris', 'ewallet'], true)) {
-    echo json_encode(['success' => false, 'message' => 'Metode pembayaran tidak dikenali.']);
+    echo json_encode(['success' => false, 'message' => 'Pilih metode pembayaran terlebih dahulu.']);
     exit;
 }
 
 $kanal = '';
 if ($metode === 'bank') {
+    if ($bankTujuan === '' || !isset(donasi_bank_channels()[$bankTujuan])) {
+        echo json_encode(['success' => false, 'message' => 'Pilih bank tujuan donasi.']);
+        exit;
+    }
     $kanal = donasi_resolve_bank($bankTujuan);
 } elseif ($metode === 'ewallet') {
+    if ($ewalletTujuan === '' || !isset(donasi_ewallet_channels()[$ewalletTujuan])) {
+        echo json_encode(['success' => false, 'message' => 'Pilih e-wallet tujuan donasi.']);
+        exit;
+    }
     $kanal = donasi_resolve_ewallet($ewalletTujuan);
 }
 
