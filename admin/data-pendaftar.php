@@ -54,7 +54,7 @@ include __DIR__ . '/../layouts/admin-header.php';
             <table class="admin__table">
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th>Enrollment ID</th>
                         <th>Program</th>
                         <th>Nama</th>
                         <th>WhatsApp</th>
@@ -72,7 +72,7 @@ include __DIR__ . '/../layouts/admin-header.php';
                     <?php foreach ($pendaftar as $p): ?>
                     <?php $p_lunas = $p['status_pembayaran'] === 'lunas'; ?>
                     <tr>
-                        <td><?= (int) $p['id'] ?></td>
+                        <td><code><?= htmlspecialchars($p['enrollment_id'] ?: '-') ?></code><br><span class="sub">Legacy #<?= (int) $p['id'] ?></span></td>
                         <td><strong><?= htmlspecialchars(ucfirst($p['program'])) ?></strong></td>
                         <td><?= htmlspecialchars($p['nama']) ?></td>
                         <td><a class="wa" href="https://wa.me/<?= preg_replace('/[^0-9]/', '', $p['whatsapp']) ?>"><?= htmlspecialchars($p['whatsapp']) ?></a></td>

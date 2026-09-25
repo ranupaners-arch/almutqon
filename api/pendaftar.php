@@ -6,6 +6,7 @@ require_once __DIR__ . '/../config/csrf.php';
 require_once __DIR__ . '/../config/pembayaran.php';
 require_once __DIR__ . '/../config/mail.php';
 require_once __DIR__ . '/../config/whatsapp.php';
+require_once __DIR__ . '/../config/identity.php';
 
 header('Content-Type: application/json');
 
@@ -18,6 +19,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 if (!csrf_check()) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Token tidak valid. Muat ulang halaman lalu coba lagi.']);
+    exit;
+}
+
+if (empty($_SESSION['user']['id'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Silakan login terlebih dahulu untuk mendaftar program.']);
     exit;
 }
 
@@ -133,28 +140,43 @@ if ($program === 'dauroh' && !in_array($metode, ['Offline', 'Online'], true)) {
 $hitung = hitung_biaya_kursus($program, $metode, $jumlah_peserta);
 $biaya = $hitung['biaya'];
 $user_email = $_SESSION['user']['email'] ?? '';
-
-$stmt = $pdo->prepare("INSERT INTO pendaftar
-    (program, nama, nama_panggilan, jenis_kelamin, usia, whatsapp, metode, alamat, instansi, jumlah_peserta, catatan, user_email, biaya, metode_pembayaran, kanal_pembayaran, batas_bayar)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR))");
+$userId = (int) $_SESSION['user']['id'];
 try {
-    $stmt->execute([$program, $nama, $nama_panggilan, $jenis_kelamin, $usia, $whatsapp, $metode, $alamat, $instansi, $jumlah_peserta, $catatan, $user_email, $biaya, $metodeBayar, $kanal]);
+    $pdo->beginTransaction();
+    $memberId = ensure_user_member_id($pdo, $userId);
+    $batchCode = '01';
+    $enrollmentId = generate_enrollment_id($pdo, (int) date('Y'), $program, $batchCode);
+    $stmt = $pdo->prepare("INSERT INTO pendaftar
+        (user_id, enrollment_id, batch_code, program, nama, nama_panggilan, jenis_kelamin, usia, whatsapp, metode, alamat, instansi, jumlah_peserta, catatan, user_email, biaya, metode_pembayaran, kanal_pembayaran, batas_bayar)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR))");
+    $stmt->execute([$userId, $enrollmentId, $batchCode, $program, $nama, $nama_panggilan, $jenis_kelamin, $usia, $whatsapp, $metode, $alamat, $instansi, $jumlah_peserta, $catatan, $user_email, $biaya, $metodeBayar, $kanal]);
+    $id = (int) $pdo->lastInsertId();
+    $pdo->commit();
 } catch (PDOException $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     error_log('[pendaftar] ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Data tidak dapat disimpan. Periksa kembali isian Anda.']);
     exit;
+} catch (Throwable $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    error_log('[pendaftar-identitas] ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Nomor identitas pendaftaran tidak dapat dibuat. Silakan coba lagi.']);
+    exit;
 }
-
-$id = (int) $pdo->lastInsertId();
 
 $target = donasi_target($metodeBayar, $kanal);
 
 // Link halaman status (countdown + salin rekening) — dikirim via email & bisa dibuka ulang kapan saja.
 $host = $_SERVER['HTTP_HOST'] ?? 'almutqon.test';
 $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$statusUrl = $scheme . '://' . $host . '/pages/bayar/tunggu.php?id=' . $id;
-$waUrl = 'https://wa.me/6282258442647?text=' . rawurlencode('Halo, saya ' . $nama . ' — ingin konfirmasi pembayaran program ' . $hitung['label'] . ' (ID pengajuan: ' . $id . ')');
+$statusUrl = $scheme . '://' . $host . '/pages/bayar/tunggu.php?id=' . $enrollmentId;
+$waUrl = 'https://wa.me/6282258442647?text=' . rawurlencode('Halo, saya ' . $nama . ' ingin konfirmasi pembayaran program ' . $hitung['label'] . ' (Enrollment ID: ' . $enrollmentId . ')');
 
 // Notifikasi email ke pendaftar. Kegagalan kirim TIDAK menggagalkan pengajuan (hanya dicatat di log).
 $emailTerkirim = false;
@@ -192,7 +214,7 @@ try {
     $pesanWa = "Assalamu'alaikum {$nama},\n\n"
         . "Pengajuan program {$hitung['label']} Anda telah kami terima.\n\n"
         . "Total bayar : " . rupiah($biaya) . "\n"
-        . "ID Pengajuan : {$id}\n"
+        . "Enrollment ID : {$enrollmentId}\n"
         . "Batas bayar : " . date('d M Y, H:i', time() + 86400) . " WIB (24 jam dari sekarang)\n\n"
         . "Lihat countdown & salin nomor rekening di sini:\n{$statusUrl}\n\n"
         . "Simpan pesan ini. Setelah membayar, konfirmasi ke admin: https://wa.me/6282258442647\n\n"
@@ -210,7 +232,8 @@ echo json_encode([
     'success' => true,
     'message' => 'Pengajuan Program Terkirim, Silahkan Menyelesaikan Pembayaran',
     'id' => $id,
-    'redirect' => '/pages/bayar/tunggu.php?id=' . $id,
+    'enrollment_id' => $enrollmentId,
+    'redirect' => '/pages/bayar/tunggu.php?id=' . $enrollmentId,
     'status_url' => $statusUrl,
     'wa_url' => $waUrl,
     'email_terkirim' => $emailTerkirim,

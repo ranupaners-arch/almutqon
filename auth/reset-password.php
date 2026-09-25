@@ -3,6 +3,7 @@ session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
 require_once '../config/auth.php';
+require_once '../config/verif-client.php';
 
 $token = trim($_POST['token'] ?? ($_GET['token'] ?? ''));
 $error = '';
@@ -28,29 +29,37 @@ if ($token === '') {
         } elseif ($password !== $konfirmasi) {
             $error = 'Konfirmasi password tidak cocok.';
         } else {
-            $stmt = $pdo->prepare('UPDATE users SET password = ? WHERE email = ?');
-            $stmt->execute([password_hash($password, PASSWORD_BCRYPT), $row['email']]);
-
-            mark_reset_used($pdo, $token);
-
-            $email = $row['email'];
-            $stmt = $pdo->prepare('SELECT id, name, email, avatar FROM users WHERE email = ?');
-            $stmt->execute([$email]);
+            $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
+            $stmt->execute([$row['email']]);
             $user = $stmt->fetch();
+            $newHash = password_hash($password, PASSWORD_DEFAULT);
+            $sync = ['ok' => true, 'error' => ''];
+            if ($user && ($user['peran'] ?? 'user') !== 'user') {
+                $sync = verif_sync_password($pdo, $user, $newHash);
+            }
+            if (!$user || !$sync['ok']) {
+                $error = !$user ? 'Akun tidak ditemukan.' : 'Password belum diubah karena sinkronisasi verifikasi gagal. Silakan coba lagi.';
+                if (!$sync['ok']) error_log('[reset-password] sinkronisasi verif gagal: ' . $sync['error']);
+            } else {
+                $pdo->prepare('UPDATE users SET password = ? WHERE email = ?')->execute([$newHash, $row['email']]);
+                mark_reset_used($pdo, $token);
 
-            // Arahkan admin yang mereset akunnya sendiri agar set login ulang
-            regenerate_session();
-            $_SESSION['admin'] = false;
-            unset($_SESSION['admin']);
+                $email = $row['email'];
 
-            $_SESSION['user'] = [
-                'id' => (int) $user['id'],
-                'name' => $user['name'],
-                'email' => $user['email'],
-                'avatar' => $user['avatar'] ?? null,
-            ];
+                // Arahkan admin yang mereset akunnya sendiri agar set login ulang
+                regenerate_session();
+                $_SESSION['admin'] = false;
+                unset($_SESSION['admin']);
 
-            $sukses = 'Password berhasil direset. Anda sudah masuk, silakan lanjut belajar.';
+                $_SESSION['user'] = [
+                    'id' => (int) $user['id'],
+                    'name' => $user['name'],
+                    'email' => $user['email'],
+                    'avatar' => $user['avatar'] ?? null,
+                ];
+
+                $sukses = 'Password berhasil direset. Anda sudah masuk, silakan lanjut belajar.';
+            }
         }
     } elseif (!$row) {
         $error = 'Token tidak valid, sudah dipakai, atau kedaluwarsa. Minta link baru.';

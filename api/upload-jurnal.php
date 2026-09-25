@@ -22,12 +22,13 @@ if (!isset($_SESSION['user'])) {
 }
 
 $userEmail = (string) ($_SESSION['user']['email'] ?? '');
+$userId = (int) ($_SESSION['user']['id'] ?? 0);
 $pendaftarId = (int) ($_POST['pendaftar_id'] ?? 0);
 $judul = trim($_POST['judul_jurnal'] ?? '');
 
 // Program harus milik user & sudah LUNAS (cegah user menumpang ID milik orang lain).
-$stmt = $pdo->prepare("SELECT id, program FROM pendaftar WHERE id = ? AND user_email = ? AND status_pembayaran = 'lunas' LIMIT 1");
-$stmt->execute([$pendaftarId, $userEmail]);
+$stmt = $pdo->prepare("SELECT id, program FROM pendaftar WHERE id = ? AND (user_id = ? OR (user_id IS NULL AND user_email = ?)) AND status_pembayaran = 'lunas' LIMIT 1");
+$stmt->execute([$pendaftarId, $userId, $userEmail]);
 $pendaftar = $stmt->fetch();
 if (!$pendaftar) {
     flash_error('Program tidak valid. Pilih program Anda yang sudah lunas.');
@@ -43,7 +44,7 @@ if ($judul === '' || mb_strlen($judul) > 255) {
 
 // Pengajar tujuan wajib aktif (nama + ID tampil agar user tahu ke siapa ia mengirim).
 $pengajarId = (int) ($_POST['pengajar_id'] ?? 0);
-$stmt = $pdo->prepare("SELECT id, name, id_pengajar FROM users WHERE id = ? AND peran != 'user' AND aktif = 1 LIMIT 1");
+$stmt = $pdo->prepare("SELECT id, name, staff_id, id_pengajar FROM users WHERE id = ? AND peran != 'user' AND aktif = 1 LIMIT 1");
 $stmt->execute([$pengajarId]);
 $guru = $stmt->fetch();
 if (!$guru) {

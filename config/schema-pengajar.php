@@ -23,7 +23,8 @@ function tambah_kolom_pengajar(PDO $pdo, string $column, string $definition): vo
 
 echo "Migrasi data pengajar...\n";
 tambah_kolom_pengajar($pdo, 'peran',
-    "ENUM('user','pengajar','koor_mubtadi','koor_mutawassith','koor_mahir','koor_mutafawwiq','direktur') NOT NULL DEFAULT 'user' AFTER theme");
+    "ENUM('user','pengajar','koor_mubtadi','koor_mutawassith','koor_mahir','koor_mutafawwiq','direktur','admin') NOT NULL DEFAULT 'user' AFTER theme");
+$pdo->exec("ALTER TABLE users MODIFY COLUMN peran ENUM('user','pengajar','koor_mubtadi','koor_mutawassith','koor_mahir','koor_mutafawwiq','direktur','admin') NOT NULL DEFAULT 'user'");
 tambah_kolom_pengajar($pdo, 'id_pengajar',
     "VARCHAR(20) NULL DEFAULT NULL AFTER peran");
 tambah_kolom_pengajar($pdo, 'aktif',

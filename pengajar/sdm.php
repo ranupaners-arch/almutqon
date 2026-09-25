@@ -37,7 +37,7 @@ $kinMateri = $pdo->query("SELECT program, COUNT(*) c FROM materi_kursus GROUP BY
 $kinAgenda = (int) $pdo->query("SELECT COUNT(*) FROM agenda WHERE tanggal >= CURDATE()")->fetchColumn();
 $kinPendaftar = $pdo->query("SELECT status_pembayaran, COUNT(*) c FROM pendaftar GROUP BY status_pembayaran")->fetchAll(PDO::FETCH_KEY_PAIR);
 
-$sdm = $pdo->query("SELECT id, name, email, peran, id_pengajar, aktif FROM users WHERE peran != 'user' ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+$sdm = $pdo->query("SELECT id, staff_id, name, email, peran, id_pengajar, aktif FROM users WHERE peran != 'user' ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 
 // Tugas yang dinilai per pengajar (kunci = format yang ditulis saat menilai: "Nama (ID)").
 $dinilai = $pdo->query("SELECT dinilai_oleh, COUNT(*) c FROM jurnal_peserta WHERE dinilai_oleh IS NOT NULL GROUP BY dinilai_oleh")->fetchAll(PDO::FETCH_KEY_PAIR);
@@ -60,7 +60,7 @@ include __DIR__ . '/../layouts/pengajar-header.php';
 <div class="admin__stats">
     <div class="admin__stat">
         <div class="admin__stat-icon admin__stat-icon--amber"><span class="material-symbols-rounded">pending_actions</span></div>
-        <div><div class="admin__stat-num"><?= (int) ($kinTugas['pending'] ?? 0) ?></div><div class="admin__stat-label">Tugas Pending</div></div>
+        <div><div class="admin__stat-num"><?= (int) ($kinTugas['pending'] ?? 0) ?></div><div class="admin__stat-label">Menunggu Penilaian</div></div>
     </div>
     <div class="admin__stat">
         <div class="admin__stat-icon admin__stat-icon--green"><span class="material-symbols-rounded">verified</span></div>
@@ -105,7 +105,7 @@ include __DIR__ . '/../layouts/pengajar-header.php';
                     <?php foreach ($sdm as $p): ?>
                     <?php $aktif = (int) $p['aktif'] === 1; ?>
                     <tr>
-                        <td><code><?= htmlspecialchars($p['id_pengajar'] ?: '—') ?></code></td>
+                        <td><code><?= htmlspecialchars($p['staff_id'] ?: '-') ?></code></td>
                         <td><strong><?= htmlspecialchars($p['name']) ?></strong><br><span class="sub"><?= htmlspecialchars($p['email']) ?></span></td>
                         <td><span class="admin__badge admin__badge--<?= $badgePeran[$p['peran']] ?? 'amber' ?>"><?= htmlspecialchars(peran_label($p['peran'])) ?></span></td>
                         <td><span class="admin__badge admin__badge--<?= $aktif ? 'green' : 'gray' ?>"><?= $aktif ? 'Aktif' : 'Dicabut' ?></span></td>

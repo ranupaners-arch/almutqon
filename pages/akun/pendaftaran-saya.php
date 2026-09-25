@@ -12,8 +12,9 @@ if (!isset($_SESSION['user'])) {
 }
 
 $email = (string) ($_SESSION['user']['email'] ?? '');
-$stmt = $pdo->prepare('SELECT id, program, nama, metode, biaya, metode_pembayaran, kanal_pembayaran, status_pembayaran, no_invoice, batas_bayar, created_at FROM pendaftar WHERE user_email = ? ORDER BY id DESC');
-$stmt->execute([$email]);
+$userId = (int) ($_SESSION['user']['id'] ?? 0);
+$stmt = $pdo->prepare('SELECT id, enrollment_id, program, nama, metode, biaya, metode_pembayaran, kanal_pembayaran, status_pembayaran, no_invoice, batas_bayar, created_at FROM pendaftar WHERE user_id = ? OR (user_id IS NULL AND user_email = ?) ORDER BY id DESC');
+$stmt->execute([$userId, $email]);
 $daftar = $stmt->fetchAll();
 
 // Sisa waktu dalam format ringkas untuk badge ("2 hari 3 jam" / "5 jam 12 menit" / "9 menit").
@@ -92,6 +93,7 @@ include __DIR__ . '/../../layouts/header.php';
                         <div>
                             <div style="font-size: 16px; font-weight: 700; color: var(--text-dark, #0F172A);"><?= htmlspecialchars($label) ?> — <?= htmlspecialchars($r['nama']) ?></div>
                             <div style="font-size: 13.5px; color: var(--text-body, #475569); margin-top: 4px;"><?= htmlspecialchars($metodeLabel) ?> · <?= rupiah((int) $r['biaya']) ?></div>
+                            <div style="font-size: 13px; color: var(--text-body, #475569); margin-top: 2px;">Enrollment ID: <code><?= htmlspecialchars($r['enrollment_id'] ?: '-') ?></code></div>
                             <div style="font-size: 13px; color: var(--muted, #94A3B8); margin-top: 2px;">
                                 <?= $lunas ? 'Pembayaran diterima. Terima kasih!' : ('Batas bayar: ' . date('d M Y, H:i', $deadlineTs) . ' WIB') ?>
                             </div>
@@ -99,7 +101,7 @@ include __DIR__ . '/../../layouts/header.php';
                         <span style="font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 999px; border: 1px solid <?= $badgeBd ?>; background: <?= $badgeBg ?>; color: <?= $badgeFg ?>; white-space: nowrap;"><?= htmlspecialchars($badgeTxt) ?></span>
                     </div>
                     <div style="margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap;">
-                        <a href="/pages/bayar/tunggu.php?id=<?= $id ?>" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; font-size: 14px; border-radius: 8px; text-decoration: none;">
+                        <a href="/pages/bayar/tunggu.php?id=<?= urlencode($r['enrollment_id'] ?: (string) $id) ?>" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; font-size: 14px; border-radius: 8px; text-decoration: none;">
                             <span class="material-symbols-rounded" style="font-size: 18px;">payments</span> Lihat Status &amp; Bayar
                         </a>
                         <?php if ($lunas && ($r['no_invoice'] ?? '') !== ''): ?>

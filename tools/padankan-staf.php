@@ -13,6 +13,17 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/pengajar.php';
 
+// Tool ini hanya untuk pairing legacy PGJ-XXXX. Setelah schema identitas baru aktif,
+// menjalankannya kembali dapat mengembalikan NIP ke format lama.
+$identitySchema = $pdo->query(
+    "SELECT COUNT(*) FROM information_schema.columns
+     WHERE table_schema = DATABASE() AND table_name = 'users' AND column_name = 'staff_id'"
+)->fetchColumn();
+if ((int) $identitySchema > 0) {
+    fwrite(STDERR, "Tool pairing legacy dinonaktifkan. Gunakan tools/sinkron-identitas-staf.php.\n");
+    exit(2);
+}
+
 $eksekusi = in_array('--eksekusi', $argv, true);
 
 $ver = new PDO(

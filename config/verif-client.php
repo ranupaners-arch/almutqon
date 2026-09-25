@@ -57,7 +57,7 @@ function verif_config(): array
 // Panggil API v1. $pdfPath opsional (path file PDF lokal untuk field `pdf`).
 // $endpoint: 'dokumen' (struk) atau 'staf' (personel).
 // Return: ['ok'=>bool, 'skipped'=>bool, 'http'=>int, 'data'=>array|null, 'error'=>string]
-function verif_api(string $action, array $fields, ?string $pdfPath = null, string $endpoint = 'dokumen'): array
+function verif_api(string $action, array $fields, ?string $filePath = null, string $endpoint = 'dokumen', string $fileField = 'pdf'): array
 {
     $cfg = verif_config();
     if (!$cfg['enabled']) {
@@ -65,12 +65,13 @@ function verif_api(string $action, array $fields, ?string $pdfPath = null, strin
     }
 
     $post = array_merge(['action' => $action], $fields);
-    if ($pdfPath !== null) {
-        if (!is_file($pdfPath)) {
-            error_log('[verif-api] file PDF tidak ada: ' . $pdfPath);
-            return ['ok' => false, 'skipped' => false, 'http' => 0, 'data' => null, 'error' => 'file PDF tidak ada'];
+    if ($filePath !== null) {
+        if (!is_file($filePath)) {
+            error_log('[verif-api] file tidak ada: ' . $filePath);
+            return ['ok' => false, 'skipped' => false, 'http' => 0, 'data' => null, 'error' => 'file tidak ada'];
         }
-        $post['pdf'] = new CURLFile($pdfPath, 'application/pdf', 'struk.pdf');
+        $mime = $fileField === 'avatar' ? (new finfo(FILEINFO_MIME_TYPE))->file($filePath) : 'application/pdf';
+        $post[$fileField] = new CURLFile($filePath, (string) $mime, basename($filePath));
     }
 
     $ch = curl_init();
@@ -220,13 +221,25 @@ function verif_replace_pdf(string $token, string $pdfBytes): array
 // Return: ['ok'=>bool, 'skipped'=>bool, 'error'=>string]
 function verif_sync_pengajar(PDO $pdo, array $user, string $mode): array
 {
-    $nip = trim((string) ($user['id_pengajar'] ?? ''));
+    $nip = trim((string) ($user['staff_id'] ?? $user['id_pengajar'] ?? ''));
     if ($nip === '') {
-        return ['ok' => false, 'skipped' => true, 'error' => 'tanpa ID pengajar'];
+        return ['ok' => false, 'skipped' => true, 'error' => 'tanpa Staff ID'];
     }
     if (($user['peran'] ?? '') === 'direktur') {
-        error_log('[verif-api] skip sinkron direktur (manual): ' . $nip);
-        return ['ok' => false, 'skipped' => true, 'error' => 'direktur manual'];
+        if ($mode !== 'upsert') {
+            error_log('[verif-api] skip perubahan direktur selain migrasi ID: ' . $nip);
+            return ['ok' => false, 'skipped' => true, 'error' => 'proteksi direktur'];
+        }
+        $res = verif_api('rename_id', [
+            'nip' => $nip,
+            'legacy_nip' => (string) ($user['id_pengajar'] ?? ''),
+            'almutqon_user_id' => (int) ($user['id'] ?? 0),
+        ], null, 'staf');
+        if ($res['ok'] && is_array($res['data']) && isset($res['data']['id'])) {
+            $pdo->prepare('UPDATE users SET verif_staff_id = ? WHERE id = ?')
+                ->execute([(int) $res['data']['id'], (int) ($user['id'] ?? 0)]);
+        }
+        return ['ok' => $res['ok'], 'skipped' => $res['skipped'], 'error' => $res['error']];
     }
     if ($mode === 'upsert') {
         require_once __DIR__ . '/pengajar.php';
@@ -238,6 +251,7 @@ function verif_sync_pengajar(PDO $pdo, array $user, string $mode): array
             'role' => peran_to_verif_role((string) ($user['peran'] ?? '')),
             'is_active' => ((int) ($user['aktif'] ?? 1) === 1) ? 1 : 0,
             'almutqon_user_id' => (int) ($user['id'] ?? 0),
+            'legacy_nip' => (string) ($user['id_pengajar'] ?? ''),
         ], null, 'staf');
         if ($res['ok'] && is_array($res['data']) && isset($res['data']['id'])) {
             $stmt = $pdo->prepare('UPDATE users SET verif_staff_id = ? WHERE id = ?');
@@ -249,14 +263,69 @@ function verif_sync_pengajar(PDO $pdo, array $user, string $mode): array
         $res = verif_api('toggle', [
             'nip' => $nip,
             'is_active' => ((int) ($user['aktif'] ?? 1) === 1) ? 1 : 0,
+            'almutqon_user_id' => (int) ($user['id'] ?? 0),
+            'legacy_nip' => (string) ($user['id_pengajar'] ?? ''),
         ], null, 'staf');
         return ['ok' => $res['ok'], 'skipped' => $res['skipped'], 'error' => $res['error']];
     }
     if ($mode === 'lepas') {
-        $res = verif_api('toggle', ['nip' => $nip, 'is_active' => 0, 'hapus_tautan' => 1], null, 'staf');
+        $res = verif_api('toggle', [
+            'nip' => $nip,
+            'is_active' => 0,
+            'hapus_tautan' => 1,
+            'almutqon_user_id' => (int) ($user['id'] ?? 0),
+            'legacy_nip' => (string) ($user['id_pengajar'] ?? ''),
+        ], null, 'staf');
         return ['ok' => $res['ok'], 'skipped' => $res['skipped'], 'error' => $res['error']];
     }
     return ['ok' => false, 'skipped' => true, 'error' => 'mode tak dikenal'];
+}
+
+// Sinkronkan email akun pengajar ke baris staff verifikasi, termasuk direktur.
+function verif_sync_email(PDO $pdo, array $user): array
+{
+    $nip = trim((string) ($user['staff_id'] ?? $user['id_pengajar'] ?? ''));
+    $email = trim((string) ($user['email'] ?? ''));
+    if ($nip === '' || $email === '') {
+        return ['ok' => false, 'skipped' => true, 'error' => 'identitas staf atau email kosong'];
+    }
+    $res = verif_api('update_email', [
+        'nip' => $nip,
+        'email' => $email,
+        'almutqon_user_id' => (int) ($user['id'] ?? 0),
+    ], null, 'staf');
+    return ['ok' => $res['ok'], 'skipped' => $res['skipped'], 'error' => $res['error']];
+}
+
+// Sinkronkan nama, email, dan avatar pengajar ke dashboard verifikasi.
+function verif_sync_profile(PDO $pdo, array $user, ?string $avatarPath = null): array
+{
+    $nip = trim((string) ($user['staff_id'] ?? $user['id_pengajar'] ?? ''));
+    if ($nip === '') {
+        return ['ok' => false, 'skipped' => true, 'error' => 'identitas staf kosong'];
+    }
+    $res = verif_api('update_profile', [
+        'nip' => $nip,
+        'nama_lengkap' => (string) ($user['name'] ?? ''),
+        'email' => (string) ($user['email'] ?? ''),
+        'almutqon_user_id' => (int) ($user['id'] ?? 0),
+    ], $avatarPath, 'staf', 'avatar');
+    return ['ok' => $res['ok'], 'skipped' => $res['skipped'], 'error' => $res['error']];
+}
+
+// Sinkronkan hash password pengajar tanpa mengirim password plaintext.
+function verif_sync_password(PDO $pdo, array $user, string $passwordHash): array
+{
+    $nip = trim((string) ($user['staff_id'] ?? $user['id_pengajar'] ?? ''));
+    if ($nip === '' || $passwordHash === '' || password_get_info($passwordHash)['algo'] === 0) {
+        return ['ok' => false, 'skipped' => true, 'error' => 'identitas staf atau hash password tidak valid'];
+    }
+    $res = verif_api('update_password', [
+        'nip' => $nip,
+        'password_hash' => $passwordHash,
+        'almutqon_user_id' => (int) ($user['id'] ?? 0),
+    ], null, 'staf');
+    return ['ok' => $res['ok'], 'skipped' => $res['skipped'], 'error' => $res['error']];
 }
 // Cabut dokumen verifikasi milik pendaftar (dipakai saat batal_lunas).
 // Rujukan lokal (token/url) SENGAJA dipertahankan: struk tetap menaut ke halaman

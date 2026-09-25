@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hapus_rpp'])) {
     exit;
 }
 
-$daftar = $pdo->query("SELECT r.*, u.name AS nama_guru, u.id_pengajar, m.judul AS judul_materi FROM rpp r LEFT JOIN users u ON u.id = r.pengajar_id LEFT JOIN materi_kursus m ON m.id = r.materi_id ORDER BY r.id DESC LIMIT 200")->fetchAll(PDO::FETCH_ASSOC);
+$daftar = $pdo->query("SELECT r.*, u.name AS nama_guru, u.staff_id, u.id_pengajar, m.judul AS judul_materi FROM rpp r LEFT JOIN users u ON u.id = r.pengajar_id LEFT JOIN materi_kursus m ON m.id = r.materi_id ORDER BY r.id DESC LIMIT 200")->fetchAll(PDO::FETCH_ASSOC);
 $materi = $pdo->query("SELECT id, judul, program FROM materi_kursus ORDER BY program, judul ASC")->fetchAll(PDO::FETCH_ASSOC);
 $lihat = null;
 if (isset($_GET['lihat'])) {
@@ -88,7 +88,7 @@ include __DIR__ . '/../layouts/pengajar-header.php';
         <?= $lihat['judul_materi'] ? ' · Materi: ' . htmlspecialchars($lihat['judul_materi']) : '' ?>
         <?= $lihat['tanggal'] ? ' · ' . date('d M Y', strtotime($lihat['tanggal'])) : '' ?>
         <?= $lihat['durasi'] ? ' · ' . (int) $lihat['durasi'] . ' menit' : '' ?>
-        <br>Oleh <?= htmlspecialchars($lihat['nama_guru'] ?? '-') ?> (<?= htmlspecialchars($lihat['id_pengajar'] ?: '-') ?>)
+        <br>Oleh <?= htmlspecialchars($lihat['nama_guru'] ?? '-') ?> (Staff ID: <?= htmlspecialchars($lihat['staff_id'] ?: $lihat['id_pengajar'] ?: '-') ?>)
     </p>
     <?php if (($lihat['tujuan'] ?? '') !== ''): ?>
         <h4 style="margin:12px 0 4px; font-size:14px;">Tujuan Pembelajaran</h4>

@@ -17,7 +17,7 @@ if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal) !== 1 || strtotime($tanggal) =
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_absensi'])) {
     require_csrf();
     $hadir = $_POST['hadir'] ?? [];
-    $oleh = (($_SESSION['pengajar']['name'] ?? 'Pengajar')) . ' (' . (($_SESSION['pengajar']['id_pengajar'] ?? '-')) . ')';
+    $oleh = (($_SESSION['pengajar']['name'] ?? 'Pengajar')) . ' (' . (($_SESSION['pengajar']['staff_id'] ?? $_SESSION['pengajar']['id_pengajar'] ?? '-')) . ')';
     $oleh = mb_strimwidth($oleh, 0, 100, '');
     $valid = ['hadir', 'izin', 'sakit', 'alpa'];
     $n = 0;
@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_absensi'])) {
     exit;
 }
 
-$stmt = $pdo->prepare("SELECT id, nama FROM pendaftar WHERE program = ? AND status_pembayaran = 'lunas' ORDER BY nama ASC");
+$stmt = $pdo->prepare("SELECT id, enrollment_id, nama FROM pendaftar WHERE program = ? AND status_pembayaran = 'lunas' ORDER BY nama ASC");
 $stmt->execute([$program]);
 $peserta = $stmt->fetchAll();
 
@@ -109,7 +109,7 @@ include __DIR__ . '/../layouts/pengajar-header.php';
                         <?php foreach ($peserta as $p): ?>
                         <?php $st = $isi[$p['id']] ?? 'hadir'; ?>
                         <tr>
-                            <td><strong><?= htmlspecialchars($p['nama']) ?></strong></td>
+                            <td><strong><?= htmlspecialchars($p['nama']) ?></strong><br><span class="sub">Enrollment ID: <code><?= htmlspecialchars($p['enrollment_id'] ?: '-') ?></code></span></td>
                             <?php foreach (['hadir' => 'H', 'izin' => 'I', 'sakit' => 'S', 'alpa' => 'A'] as $val => $singkat): ?>
                                 <td style="text-align:center" title="<?= ucfirst($val) ?>">
                                     <input type="radio" name="hadir[<?= (int) $p['id'] ?>]" value="<?= $val ?>" <?= $st === $val ? 'checked' : '' ?> aria-label="<?= ucfirst($val) ?> untuk <?= htmlspecialchars($p['nama']) ?>" style="width:18px; height:18px; accent-color:#166534;">

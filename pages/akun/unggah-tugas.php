@@ -7,8 +7,9 @@ require_once __DIR__ . '/../../config/csrf.php';
 
 $email = (string) ($_SESSION['user']['email'] ?? '');
 
-$stmt = $pdo->prepare("SELECT id, program, nama, metode FROM pendaftar WHERE user_email = ? AND status_pembayaran = 'lunas' ORDER BY id DESC");
-$stmt->execute([$email]);
+$userId = (int) ($_SESSION['user']['id'] ?? 0);
+$stmt = $pdo->prepare("SELECT id, enrollment_id, program, nama, metode FROM pendaftar WHERE (user_id = ? OR (user_id IS NULL AND user_email = ?)) AND status_pembayaran = 'lunas' ORDER BY id DESC");
+$stmt->execute([$userId, $email]);
 $lunas = $stmt->fetchAll();
 
 $labelProgram = function (array $r): string {
@@ -25,7 +26,7 @@ $stmt->execute([$email]);
 $totalTugas = (int) $stmt->fetchColumn();
 
 // Daftar pengajar aktif sebagai tujuan pengiriman (nama + ID tampil jelas).
-$guru = $pdo->query("SELECT id, name, id_pengajar, peran FROM users WHERE peran != 'user' AND aktif = 1 ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+$guru = $pdo->query("SELECT id, name, staff_id, id_pengajar, peran FROM users WHERE peran != 'user' AND aktif = 1 ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 require_once __DIR__ . '/../../config/pengajar.php';
 
@@ -72,7 +73,7 @@ include __DIR__ . '/../../layouts/akun-header.php';
                 <label class="admin__form-label" for="jurnal_program">Program</label>
                 <select id="jurnal_program" name="pendaftar_id" class="admin__input" required>
                     <?php foreach ($lunas as $p): ?>
-                        <option value="<?= (int) $p['id'] ?>"><?= htmlspecialchars($labelProgram($p)) ?></option>
+                        <option value="<?= (int) $p['id'] ?>"><?= htmlspecialchars($labelProgram($p)) ?> (<?= htmlspecialchars($p['enrollment_id'] ?: '-') ?>)</option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -87,7 +88,7 @@ include __DIR__ . '/../../layouts/akun-header.php';
                 <?php else: ?>
                     <select id="jurnal_guru" name="pengajar_id" class="admin__input" required>
                         <?php foreach ($guru as $g): ?>
-                            <option value="<?= (int) $g['id'] ?>"><?= htmlspecialchars($g['name']) ?> (<?= htmlspecialchars(peran_label($g['peran'])) ?>)</option>
+                            <option value="<?= (int) $g['id'] ?>"><?= htmlspecialchars($g['name']) ?> (Staff ID: <?= htmlspecialchars($g['staff_id'] ?: $g['id_pengajar'] ?: '-') ?>)</option>
                         <?php endforeach; ?>
                     </select>
                 <?php endif; ?>

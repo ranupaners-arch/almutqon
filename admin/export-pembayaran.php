@@ -9,7 +9,7 @@ require_once __DIR__ . '/../config/pembayaran.php';
 
 require_admin();
 
-$rows = $pdo->query("SELECT no_invoice, tanggal_bayar, nama, program, metode, metode_pembayaran, kanal_pembayaran, biaya FROM pendaftar WHERE status_pembayaran = 'lunas' ORDER BY tanggal_bayar DESC")->fetchAll(PDO::FETCH_ASSOC);
+$rows = $pdo->query("SELECT enrollment_id, no_invoice, tanggal_bayar, nama, program, metode, metode_pembayaran, kanal_pembayaran, biaya FROM pendaftar WHERE status_pembayaran = 'lunas' ORDER BY tanggal_bayar DESC")->fetchAll(PDO::FETCH_ASSOC);
 
 $filename = 'Laporan_Pembayaran_Kursus_' . date('Ymd') . '.csv';
 header('Content-Type: text/csv; charset=UTF-8');
@@ -18,7 +18,7 @@ header('Pragma: no-cache');
 
 $out = fopen('php://output', 'w');
 fwrite($out, "\xEF\xBB\xBF"); // BOM UTF-8: Excel membaca karakter Indonesia dengan benar
-fputcsv($out, ['No Invoice', 'Tanggal Bayar', 'Nama', 'Program (Metode)', 'Kanal Pembayaran', 'Biaya'], ';', '"', '');
+fputcsv($out, ['Enrollment ID', 'No Invoice', 'Tanggal Bayar', 'Nama', 'Program (Metode)', 'Kanal Pembayaran', 'Biaya'], ';', '"', '');
 
 foreach ($rows as $r) {
     $program = match ($r['program']) {
@@ -35,6 +35,7 @@ foreach ($rows as $r) {
         $metodeLabel .= ' · ' . $kanalLabel;
     }
     fputcsv($out, [
+        (string) $r['enrollment_id'],
         (string) $r['no_invoice'],
         $r['tanggal_bayar'] ? date('Y-m-d H:i:s', strtotime($r['tanggal_bayar'])) : '',
         (string) $r['nama'],

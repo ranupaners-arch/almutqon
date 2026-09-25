@@ -6,8 +6,9 @@ require_once __DIR__ . '/../../config/auth.php';
 
 $email = (string) ($_SESSION['user']['email'] ?? '');
 
-$stmt = $pdo->prepare("SELECT id, program, nama, metode FROM pendaftar WHERE user_email = ? AND status_pembayaran = 'lunas' ORDER BY id DESC");
-$stmt->execute([$email]);
+$userId = (int) ($_SESSION['user']['id'] ?? 0);
+$stmt = $pdo->prepare("SELECT id, enrollment_id, program, nama, metode FROM pendaftar WHERE (user_id = ? OR (user_id IS NULL AND user_email = ?)) AND status_pembayaran = 'lunas' ORDER BY id DESC");
+$stmt->execute([$userId, $email]);
 $lunas = $stmt->fetchAll();
 
 $materi = [];
@@ -87,7 +88,7 @@ include __DIR__ . '/../../layouts/akun-header.php';
                     <?php foreach ($lunas as $p): ?>
                     <?php $pct = $persenHadir((int) $p['id']); ?>
                     <tr>
-                        <td><strong><?= htmlspecialchars(ucfirst($p['program'])) ?> <?= htmlspecialchars($p['metode']) ?></strong></td>
+                        <td><strong><?= htmlspecialchars(ucfirst($p['program'])) ?> <?= htmlspecialchars($p['metode']) ?></strong><br><span class="sub">Enrollment ID: <code><?= htmlspecialchars($p['enrollment_id'] ?: '-') ?></code></span></td>
                         <td><?= count($hadir[(int) $p['id']] ?? []) ?> sesi</td>
                         <td style="text-align:right"><?= $pct === null ? '<span class="sub">Belum ada sesi</span>' : '<strong>' . $pct . '% hadir</strong>' ?></td>
                     </tr>

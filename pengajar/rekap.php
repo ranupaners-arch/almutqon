@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_jadwal'])) {
     exit;
 }
 
-$stmt = $pdo->prepare("SELECT id, nama, metode FROM pendaftar WHERE program = ? AND status_pembayaran = 'lunas' ORDER BY nama ASC");
+$stmt = $pdo->prepare("SELECT id, enrollment_id, nama, metode FROM pendaftar WHERE program = ? AND status_pembayaran = 'lunas' ORDER BY nama ASC");
 $stmt->execute([$program]);
 $peserta = $stmt->fetchAll();
 
@@ -216,7 +216,7 @@ include __DIR__ . '/../layouts/pengajar-header.php';
                     }
                     ?>
                     <tr>
-                        <td><strong><?= htmlspecialchars($p['nama']) ?></strong></td>
+                        <td><strong><?= htmlspecialchars($p['nama']) ?></strong><br><span class="sub"><code><?= htmlspecialchars($p['enrollment_id'] ?: '-') ?></code></span></td>
                         <td><?= $jk !== '' ? htmlspecialchars($jk) : '<span class="sub">—</span>' ?></td>
                         <td style="text-align:center"><?= $total ?></td>
                         <td style="text-align:center"><strong><?= $h ?></strong></td>

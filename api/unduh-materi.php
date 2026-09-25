@@ -15,8 +15,8 @@ if ($materi) {
     if (is_admin() || is_pengajar()) {
         $allowed = true;
     } elseif (isset($_SESSION['user'])) {
-        $cek = $pdo->prepare("SELECT COUNT(*) FROM pendaftar WHERE user_email = ? AND program = ? AND status_pembayaran = 'lunas'");
-        $cek->execute([(string) $_SESSION['user']['email'], $materi['program']]);
+        $cek = $pdo->prepare("SELECT COUNT(*) FROM pendaftar WHERE (user_id = ? OR (user_id IS NULL AND user_email = ?)) AND program = ? AND status_pembayaran = 'lunas'");
+        $cek->execute([(int) $_SESSION['user']['id'], (string) $_SESSION['user']['email'], $materi['program']]);
         $allowed = ((int) $cek->fetchColumn()) > 0;
     }
 }

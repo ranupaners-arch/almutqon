@@ -54,7 +54,7 @@ include __DIR__ . '/../../layouts/header.php';
 
             <a href="/pages/akun/profil.php" style="display: flex; align-items: center; gap: 12px; padding: 14px 8px; border-radius: 8px; text-decoration: none; color: var(--text-body, #475569); font-weight: 500; transition: background .2s;">
                 <span class="material-symbols-rounded" style="color: var(--primary);">person</span>
-                <span style="flex: 1;">Profil & Foto</span>
+                <span style="flex: 1;">Profil, Foto & Email</span>
                 <span class="material-symbols-rounded" style="color: var(--muted, #94A3B8); font-size: 20px;">chevron_right</span>
             </a>
             <a href="/pages/akun/pendaftaran-saya.php" style="display: flex; align-items: center; gap: 12px; padding: 14px 8px; border-radius: 8px; text-decoration: none; color: var(--text-body, #475569); font-weight: 500; transition: background .2s;">

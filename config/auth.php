@@ -72,13 +72,13 @@ function regenerate_session(): void
 
 function update_password(PDO $pdo, int $userId, string $oldPassword, string $newPassword): array
 {
-    if (strlen($newPassword) < 6) {
-        return ['ok' => false, 'message' => 'Password baru minimal 6 karakter.'];
-    }
-
-    $stmt = $pdo->prepare('SELECT password FROM users WHERE id = ?');
+    $stmt = $pdo->prepare('SELECT password, peran, staff_id, id_pengajar, name, email FROM users WHERE id = ?');
     $stmt->execute([$userId]);
     $row = $stmt->fetch();
+    $isStaff = ($row['peran'] ?? 'user') !== 'user';
+    if (strlen($newPassword) < ($isStaff ? 8 : 6) || ($isStaff && (!preg_match('/[A-Za-z]/', $newPassword) || !preg_match('/[0-9]/', $newPassword)))) {
+        return ['ok' => false, 'message' => $isStaff ? 'Password baru minimal 8 karakter serta harus mengandung huruf dan angka.' : 'Password baru minimal 6 karakter.'];
+    }
 
     // Akun tanpa password (mis. dibuat via Google OAuth) tidak perlu password lama
     $stored = $row['password'] ?? null;
@@ -86,8 +86,17 @@ function update_password(PDO $pdo, int $userId, string $oldPassword, string $new
         return ['ok' => false, 'message' => 'Password lama salah.'];
     }
 
+    $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
+    if ($isStaff) {
+        require_once __DIR__ . '/verif-client.php';
+        $sync = verif_sync_password($pdo, $row, $newHash);
+        if (!$sync['ok']) {
+            error_log('[password] sinkronisasi verif gagal: ' . $sync['error']);
+            return ['ok' => false, 'message' => 'Password belum diubah karena sinkronisasi verifikasi gagal. Silakan coba lagi.'];
+        }
+    }
     $stmt = $pdo->prepare('UPDATE users SET password = ? WHERE id = ?');
-    $stmt->execute([password_hash($newPassword, PASSWORD_BCRYPT), $userId]);
+    $stmt->execute([$newHash, $userId]);
 
     return ['ok' => true, 'message' => 'Password berhasil diganti.'];
 }

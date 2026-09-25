@@ -120,7 +120,7 @@ include __DIR__ . '/../layouts/admin-header.php';
                         <td><code><?= htmlspecialchars($p['no_invoice'] !== '' ? $p['no_invoice'] : '—') ?></code></td>
                         <td>
                             <strong><?= htmlspecialchars($p['nama']) ?></strong><br>
-                            <span class="sub"><?= htmlspecialchars($plabel) ?></span>
+                            <span class="sub"><?= htmlspecialchars($plabel) ?> · Enrollment ID: <code><?= htmlspecialchars($p['enrollment_id'] ?: '-') ?></code></span>
                             <?php if ($pmeta): ?><br><span class="sub"><?= htmlspecialchars(implode(' · ', $pmeta)) ?></span><?php endif; ?>
                         </td>
                         <td>

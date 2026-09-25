@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/../../config/csrf.php';
+require_once __DIR__ . '/../../config/account-settings.php';
 
 if (!isset($_SESSION['user'])) {
     header('Location: /');
@@ -18,6 +19,17 @@ unset($_SESSION['jenis_pesan']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf();
+
+    if (($_POST['aksi'] ?? '') === 'email') {
+        $result = change_account_email($pdo, $user_id, (string) ($_POST['email'] ?? ''), (string) ($_POST['password_saat_ini'] ?? ''));
+        if ($result['ok']) {
+            $_SESSION['user']['email'] = $result['email'];
+        }
+        $_SESSION['pesan_sukses'] = $result['message'];
+        $_SESSION['jenis_pesan'] = $result['ok'] ? 'success' : 'error';
+        header('Location: profil.php');
+        exit;
+    }
 
     $name = trim($_POST['name'] ?? '');
     $avatar_path = $user['avatar'] ?? null;
@@ -127,14 +139,24 @@ include __DIR__ . '/../../layouts/header.php';
                         style="width: 100%; padding: 12px 16px; border: 1px solid var(--border, #cbd5e1); border-radius: 8px; font-size: 16px; background: var(--background); color: var(--text-dark); box-sizing: border-box;">
             </div>
 
-            <div style="margin-bottom: 16px;">
-                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--text-body, #475569);">Email</label>
-                <input type="email" value="<?= htmlspecialchars($user['email']) ?>" disabled
-                       style="width: 100%; padding: 12px 16px; border: 1px solid var(--border, #e2e8f0); border-radius: 8px; font-size: 16px; background: var(--surface, #f8fafc); color: var(--muted, #94a3b8); box-sizing: border-box;">
-            </div>
-
             <button type="submit" class="btn btn-primary"
                     style="padding: 14px 32px; font-size: 16px; border: none; cursor: pointer; border-radius: 8px;">Simpan Profil</button>
+        </form>
+
+        <form method="POST" autocomplete="off"
+              style="margin-top: 20px; background: var(--surface, #fff); padding: 32px; border-radius: 12px; box-shadow: var(--shadow-sm, 0 4px 6px rgba(0,0,0,0.05));">
+            <?= csrf_field() ?>
+            <input type="hidden" name="aksi" value="email">
+            <h2 style="font-size: 20px; margin: 0 0 6px;">Email Akun</h2>
+            <p style="font-size: 13px; color: var(--muted, #94a3b8); margin: 0 0 20px;">Email digunakan untuk login dan pemulihan akun.</p>
+            <label for="email-akun" style="display:block;font-weight:600;margin-bottom:8px;color:var(--text-body,#475569);">Email Baru</label>
+            <input type="email" id="email-akun" name="email" value="<?= htmlspecialchars($user['email']) ?>" maxlength="150" required
+                   style="width:100%;padding:12px 16px;border:1px solid var(--border,#cbd5e1);border-radius:8px;font-size:16px;background:var(--background);color:var(--text-dark);box-sizing:border-box;">
+            <label for="password-email" style="display:block;font-weight:600;margin:16px 0 8px;color:var(--text-body,#475569);">Password Saat Ini</label>
+            <input type="password" id="password-email" name="password_saat_ini" autocomplete="current-password"
+                   style="width:100%;padding:12px 16px;border:1px solid var(--border,#cbd5e1);border-radius:8px;font-size:16px;background:var(--background);color:var(--text-dark);box-sizing:border-box;">
+            <p style="font-size:13px;color:var(--muted,#94a3b8);margin:6px 0 18px;">Wajib untuk akun dengan password. Akun Google dapat mengosongkannya.</p>
+            <button type="submit" class="btn btn-primary" style="padding:14px 32px;font-size:16px;border:none;cursor:pointer;border-radius:8px;">Simpan Email</button>
         </form>
 
     </div>

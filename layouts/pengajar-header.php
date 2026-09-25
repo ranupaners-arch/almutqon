@@ -14,7 +14,7 @@ require_pengajar();
 $pengajar_title = $pengajar_title ?? 'Dashboard';
 $pengajar_aktif = $pengajar_aktif ?? 'dashboard';
 $pgNama   = $_SESSION['pengajar']['name'] ?? 'Pengajar';
-$pgId     = $_SESSION['pengajar']['id_pengajar'] ?? '-';
+$pgId     = $_SESSION['pengajar']['staff_id'] ?? $_SESSION['pengajar']['id_pengajar'] ?? '-';
 $pgPeran  = $_SESSION['pengajar']['peran'] ?? 'pengajar';
 $pgAvatar = $_SESSION['pengajar']['avatar'] ?? null;
 
@@ -44,7 +44,7 @@ if (($pgPeran === 'direktur')) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0">
-    <link rel="stylesheet" href="/css/admin.css?v=20260917g">
+    <link rel="stylesheet" href="/css/admin.css?v=20260926a">
 </head>
 <body>
 
@@ -75,7 +75,7 @@ if (($pgPeran === 'direktur')) {
             </button>
         </nav>
 
-        <div class="admin__footer" style="display:flex; align-items:center; gap:10px;">
+        <a class="admin__footer" href="profil.php" aria-label="Buka Pengaturan akun" title="Pengaturan akun" style="display:flex; align-items:center; gap:10px; text-decoration:none;">
             <span style="width:36px; height:36px; border-radius:50%; overflow:hidden; flex:none; display:inline-flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#166534,#14532D); color:#fff; font-weight:700;">
                 <?php if (!empty($pgAvatar)): ?>
                     <img src="/<?= htmlspecialchars($pgAvatar) ?>" alt="Avatar" style="width:100%; height:100%; object-fit:cover;">
@@ -87,7 +87,7 @@ if (($pgPeran === 'direktur')) {
                 <p class="admin__footer-name" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?= htmlspecialchars($pgNama) ?></p>
                 <p class="admin__footer-email" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?= htmlspecialchars((string) $pgId) ?> · <?= htmlspecialchars(peran_label($pgPeran)) ?></p>
             </div>
-        </div>
+        </a>
     </aside>
 
     <div class="admin__overlay" id="adminOverlay"></div>

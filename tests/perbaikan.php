@@ -128,6 +128,7 @@ t('API tanpa identitas -> 400/404 graceful', $vr2['ok'] === false && in_array($v
 echo "\n=== Sinkron personel (config/pengajar.php mapping) ===\n";
 require_once __DIR__ . '/../config/pengajar.php';
 t('direktur -> direktur', peran_to_verif_role('direktur') === 'direktur');
+t('admin -> admin', peran_to_verif_role('admin') === 'admin');
 t('koor_mubtadi -> staff', peran_to_verif_role('koor_mubtadi') === 'staff');
 t('pengajar -> staff', peran_to_verif_role('pengajar') === 'staff');
 
@@ -152,7 +153,7 @@ $r = http('POST', "{$baseUrl}/admin/login.php", $jar, ['email' => $email, 'passw
 t('login password salah -> ditolak (200 + pesan)', $r['status'] === 200 && stripos($r['body'], 'salah') !== false, "status {$r['status']}");
 
 $r = http('POST', "{$baseUrl}/admin/login.php", $jar, ['email' => $email, 'password' => $pass, 'csrf_token' => $csrf]);
-t('login password benar -> 302 ke daftar-artikel', $r['status'] === 302 && strpos($r['location'], 'daftar-artikel.php') !== false, "status {$r['status']} loc {$r['location']}");
+t('login password benar -> 302 ke dashboard admin', $r['status'] === 302 && strpos($r['location'], 'index.php') !== false, "status {$r['status']} loc {$r['location']}");
 
 $r = http('GET', "{$baseUrl}/admin/daftar-artikel.php", $jar);
 t('daftar-artikel setelah login -> 200', $r['status'] === 200, "status {$r['status']}");
@@ -285,7 +286,7 @@ $r = http('GET', "{$baseUrl}/api/cron-wa-reminder.php?key=salah", null);
 t('cron key salah -> 403', $r['status'] === 403, "status {$r['status']}");
 
 echo "\n=== Data pengajar: peran & ID ===\n";
-t('6 peran pengajar terdaftar', count(peran_pengajar_options()) === 6);
+t('Admin dan 6 peran pengajar terdaftar', count(peran_pengajar_options()) === 7 && isset(peran_pengajar_options()['admin']));
 t('label peran koordinator', peran_label('koor_mubtadi') === "Koordinator Marhalah Mubtadi'" && peran_label('direktur') === 'Direktur');
 
 echo "\n=== Ekspor CSV finansial ===\n";$r = http('GET', "{$baseUrl}/admin/export-pembayaran.php", null);
@@ -324,7 +325,7 @@ if ($pdo) {
     preg_match('/name="csrf_token" value="([^"]+)"/', $r['body'], $m3);
     $csrf3 = $m3[1] ?? '';
     $r = http('POST', "{$baseUrl}/admin/login.php", $jar2, ['email' => $email, 'password' => $pass, 'csrf_token' => $csrf3]);
-    t('login ulang admin untuk uji riwayat -> 302', $r['status'] === 302 && strpos($r['location'], 'daftar-artikel.php') !== false, "status {$r['status']}");
+    t('login ulang admin untuk uji riwayat -> 302', $r['status'] === 302 && strpos($r['location'], 'index.php') !== false, "status {$r['status']}");
 
     $r = http('GET', "{$baseUrl}/pages/akun/pendaftaran-saya.php", $jar2);
     t('pemilik melihat baris + tautan Lihat Status', $r['status'] === 200 && strpos($r['body'], 'tunggu.php?id=' . $pid) !== false && strpos($r['body'], 'Lihat Status') !== false, "status {$r['status']}");
@@ -412,8 +413,8 @@ if ($pdo) {
         $r = http('GET', "{$baseUrl}/admin/data-pengajar.php", $jarH);
         t('flash staff tersinkron', strpos($r['body'], 'Staff verifikasi tersinkron.') !== false);
         $hu = $pdo->query("SELECT * FROM users WHERE email='uji.sinkron@contoh.id'")->fetch(PDO::FETCH_ASSOC);
-        t('user punya NIP + link', $hu && !empty($hu['id_pengajar']) && !empty($hu['verif_staff_id']));
-        $hs = $verPdo->query('SELECT * FROM staff WHERE nip=' . $verPdo->quote((string) $hu['id_pengajar']))->fetch(PDO::FETCH_ASSOC);
+        t('user punya Member ID + Staff ID + link legacy', $hu && identity_is_member_id((string) $hu['member_id']) && identity_is_staff_id((string) $hu['staff_id']) && !empty($hu['id_pengajar']) && !empty($hu['verif_staff_id']));
+        $hs = $verPdo->query('SELECT * FROM staff WHERE nip=' . $verPdo->quote((string) $hu['staff_id']))->fetch(PDO::FETCH_ASSOC);
         t('staff verif tercatat (role staff, aktif)', $hs && $hs['role'] === 'staff' && (int) $hs['is_active'] === 1);
 
         $r = http('GET', "{$baseUrl}/admin/data-pengajar.php", $jarH);
@@ -430,7 +431,7 @@ if ($pdo) {
         $hd = $verPdo->query('SELECT is_active,almutqon_user_id FROM staff WHERE id=' . (int) $hs['id'])->fetch(PDO::FETCH_ASSOC);
         t('staff off + tautan lepas', (int) $hd['is_active'] === 0 && $hd['almutqon_user_id'] === null);
 
-        $verPdo->prepare('DELETE FROM activity_log WHERE description LIKE ?')->execute(['%' . $hu['id_pengajar'] . '%']);
+        $verPdo->prepare('DELETE FROM activity_log WHERE description LIKE ? OR description LIKE ?')->execute(['%' . $hu['id_pengajar'] . '%', '%' . $hu['staff_id'] . '%']);
         $verPdo->prepare('DELETE FROM staff WHERE id=?')->execute([(int) $hs['id']]);
         $r = http('GET', "{$baseUrl}/admin/logout.php", $jarH);
         unlink($jarH);
@@ -439,9 +440,13 @@ if ($pdo) {
 
     // Siklus revoke: user temp bisa login → admin revoke → login ditolak → bersih.
     t('format ID pengajar PGJ-XXXX', preg_match('/^PGJ-(\d{4}|\d{8})$/', buat_id_pengajar($pdo)) === 1);
-    $pdo->prepare("INSERT INTO users (name, email, password, peran, id_pengajar, aktif) VALUES (?,?,?,?,?,1)")
-        ->execute(['UJI-REVOKE', 'uji.revoke@contoh.com', password_hash('Rahasia123', PASSWORD_BCRYPT), 'pengajar', 'PGJ-UJIT']);
+    $pdo->beginTransaction();
+    $ujiMemberId = generate_member_id($pdo);
+    $ujiStaffId = generate_staff_id($pdo, (int) date('Y'));
+    $pdo->prepare("INSERT INTO users (member_id, staff_id, name, email, password, peran, id_pengajar, aktif) VALUES (?,?,?,?,?,?,?,1)")
+        ->execute([$ujiMemberId, $ujiStaffId, 'UJI-REVOKE', 'uji.revoke@contoh.com', password_hash('Rahasia123', PASSWORD_BCRYPT), 'pengajar', 'PGJ-UJIT']);
     $uid = (int) $pdo->lastInsertId();
+    $pdo->commit();
     $jar3 = tempnam(sys_get_temp_dir(), 'amqtest');
     $r = http('GET', "{$baseUrl}/", $jar3);
     preg_match('/name="csrf_token" value="([^"]+)"/', $r['body'], $m4);
@@ -453,7 +458,7 @@ if ($pdo) {
     preg_match('/name="csrf_token" value="([^"]+)"/', $r['body'], $m5);
     $r = http('POST', "{$baseUrl}/admin/login.php", $jar4, ['email' => $email, 'password' => $pass, 'csrf_token' => $m5[1] ?? '']);
     $r = http('GET', "{$baseUrl}/admin/data-pengajar.php", $jar4);
-    t('data-pengajar admin -> 200 + tombol Revoke', $r['status'] === 200 && strpos($r['body'], 'Revoke') !== false && strpos($r['body'], 'PGJ-UJIT') !== false, "status {$r['status']}");
+    t('data-pengajar admin -> 200 + Staff ID + tombol Revoke', $r['status'] === 200 && strpos($r['body'], 'Revoke') !== false && strpos($r['body'], $ujiStaffId) !== false, "status {$r['status']}");
     preg_match('/name="csrf_token" value="([^"]+)"/', $r['body'], $m6);
     $r = http('POST', "{$baseUrl}/admin/data-pengajar.php", $jar4, ['toggle_aktif' => (string) $uid, 'csrf_token' => $m6[1] ?? '']);
     t('revoke via POST -> 302', $r['status'] === 302, "status {$r['status']}");

@@ -53,14 +53,15 @@ if ($claims === null) {
 // 6) Tautkan / buat akun
 $email = strtolower(trim((string) $claims['email']));
 $googleSub = (string) $claims['sub'];
+require_once __DIR__ . '/../config/identity.php';
 
-$stmt = $pdo->prepare('SELECT id, name, email, avatar FROM users WHERE google_id = ?');
+$stmt = $pdo->prepare('SELECT id, member_id, name, email, avatar FROM users WHERE google_id = ?');
 $stmt->execute([$googleSub]);
 $user = $stmt->fetch();
 
 if (!$user) {
     // Coba tautkan lewat email yang sama
-    $stmt = $pdo->prepare('SELECT id, name, email, avatar, password FROM users WHERE email = ?');
+    $stmt = $pdo->prepare('SELECT id, member_id, name, email, avatar, password FROM users WHERE email = ?');
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
@@ -71,14 +72,36 @@ if (!$user) {
         if ($name === '') {
             $name = strtok($email, '@') ?: 'Pengguna Google';
         }
-        $pdo->prepare('INSERT INTO users (name, email, password, google_id) VALUES (?, ?, NULL, ?)')
-            ->execute([$name, $email, $googleSub]);
-        $user = [
-            'id' => (int) $pdo->lastInsertId(),
-            'name' => $name,
-            'email' => $email,
-            'avatar' => null,
-        ];
+        try {
+            $pdo->beginTransaction();
+            $memberId = generate_member_id($pdo);
+            $pdo->prepare('INSERT INTO users (member_id, name, email, password, google_id) VALUES (?, ?, ?, NULL, ?)')
+                ->execute([$memberId, $name, $email, $googleSub]);
+            $user = [
+                'id' => (int) $pdo->lastInsertId(),
+                'member_id' => $memberId,
+                'name' => $name,
+                'email' => $email,
+                'avatar' => null,
+            ];
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            error_log('[google-member-id] ' . $e->getMessage());
+            google_error_page('Akun tidak dapat dibuat', 'Nomor identitas akun gagal dibuat. Silakan coba lagi.');
+        }
+    }
+}
+
+if (empty($user['member_id'])) {
+    try {
+        $pdo->beginTransaction();
+        $user['member_id'] = ensure_user_member_id($pdo, (int) $user['id']);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        error_log('[google-member-id] ' . $e->getMessage());
+        google_error_page('Akun tidak dapat digunakan', 'Member ID gagal disiapkan. Silakan coba lagi.');
     }
 }
 

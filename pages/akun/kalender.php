@@ -7,8 +7,9 @@ require_once __DIR__ . '/../../config/auth.php';
 $email = (string) ($_SESSION['user']['email'] ?? '');
 
 // Program LUNAS milik user → cakupan yang boleh dilihat (selalu termasuk 'global').
-$stmt = $pdo->prepare("SELECT DISTINCT program FROM pendaftar WHERE user_email = ? AND status_pembayaran = 'lunas'");
-$stmt->execute([$email]);
+$userId = (int) ($_SESSION['user']['id'] ?? 0);
+$stmt = $pdo->prepare("SELECT DISTINCT program FROM pendaftar WHERE (user_id = ? OR (user_id IS NULL AND user_email = ?)) AND status_pembayaran = 'lunas'");
+$stmt->execute([$userId, $email]);
 $cakupan = array_merge(['global'], $stmt->fetchAll(PDO::FETCH_COLUMN));
 
 $ph = implode(',', array_fill(0, count($cakupan), '?'));

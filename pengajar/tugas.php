@@ -20,13 +20,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nilai_tugas'])) {
     if (!in_array($status, ['pending', 'acc', 'revisi'], true) || ($nilai !== '' && !in_array($nilai, $nilaiValid, true))) {
         flash_error('Status review / nilai tidak valid.');
     } else {
+        // Nilai hanya boleh menandai tugas yang sudah selesai dinilai.
+        if ($nilai !== '' && $status === 'pending') {
+            $status = 'acc';
+        }
         // Boleh menilai bila direktur, atau tugas ditujukan kepadanya / tanpa tujuan.
         $stmt = $pdo->prepare("SELECT id FROM jurnal_peserta WHERE id = ?" . ($isDir ? '' : " AND (pengajar_id = ? OR pengajar_id IS NULL)"));
         $stmt->execute($isDir ? [$id] : [$id, $pgId]);
         if (!$stmt->fetch()) {
             flash_error('Tugas tidak ditemukan atau bukan wewenang Anda.');
         } else {
-            $oleh = $pgNama . ' (' . (($_SESSION['pengajar']['id_pengajar'] ?? '-')) . ')';
+            $oleh = $pgNama . ' (' . (($_SESSION['pengajar']['staff_id'] ?? $_SESSION['pengajar']['id_pengajar'] ?? '-')) . ')';
             $up = $pdo->prepare("UPDATE jurnal_peserta SET status_review = ?, nilai = ?, dinilai_oleh = ?, dinilai_pada = NOW() WHERE id = ?");
             $up->execute([$status, $nilai !== '' ? $nilai : null, mb_strimwidth($oleh, 0, 100, ''), $id]);
             flash("Tugas ditandai {$status}" . ($nilai !== '' ? " dengan nilai {$nilai}" : '') . '.');
@@ -98,7 +102,7 @@ include __DIR__ . '/../layouts/pengajar-header.php';
                     <tr>
                         <td><strong><?= htmlspecialchars($t['judul_jurnal']) ?></strong><br><span class="sub"><?= htmlspecialchars(ucfirst((string) ($t['program_peserta'] ?? ''))) ?> · <?= date('d M Y', strtotime($t['diunggah_pada'])) ?></span></td>
                         <td><?= htmlspecialchars($t['nama_peserta'] ?? '-') ?><br><span class="sub"><?= htmlspecialchars($t['user_email']) ?></span></td>
-                        <td><span class="admin__badge admin__badge--<?= $t['status_review'] === 'acc' ? 'green' : ($t['status_review'] === 'revisi' ? 'red' : 'amber') ?>"><?= $t['status_review'] === 'acc' ? 'ACC' : ($t['status_review'] === 'revisi' ? 'Revisi' : 'Pending') ?></span><?php if (($t['dinilai_oleh'] ?? '') !== ''): ?><br><span class="sub">oleh <?= htmlspecialchars(nama_tanpa_id($t['dinilai_oleh'])) ?></span><?php endif; ?></td>
+                        <td><span class="admin__badge admin__badge--<?= $t['status_review'] === 'acc' ? 'green' : ($t['status_review'] === 'revisi' ? 'red' : 'amber') ?>"><?= $t['status_review'] === 'acc' ? 'ACC' : ($t['status_review'] === 'revisi' ? 'Perlu Revisi' : 'Menunggu Penilaian') ?></span><?php if (($t['dinilai_oleh'] ?? '') !== ''): ?><br><span class="sub">oleh <?= htmlspecialchars(nama_tanpa_id($t['dinilai_oleh'])) ?></span><?php endif; ?></td>
                         <td><?= ($t['nilai'] ?? '') !== '' ? '<strong style="font-size:16px;">' . htmlspecialchars($t['nilai']) . '</strong>' : '<span class="sub">—</span>' ?></td>
                         <td style="text-align:right; white-space:nowrap">
                             <a class="admin__btn admin__btn--primary admin__btn--sm" href="/api/unduh-jurnal.php?id=<?= (int) $t['id'] ?>">
@@ -108,9 +112,9 @@ include __DIR__ . '/../layouts/pengajar-header.php';
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="nilai_tugas" value="<?= (int) $t['id'] ?>">
                                 <select name="status_review" class="admin__select-sm" aria-label="Status review">
-                                    <option value="pending" <?= $t['status_review'] === 'pending' ? 'selected' : '' ?>>Pending</option>
+                                    <option value="pending" <?= $t['status_review'] === 'pending' ? 'selected' : '' ?>>Menunggu Penilaian</option>
                                     <option value="acc" <?= $t['status_review'] === 'acc' ? 'selected' : '' ?>>ACC</option>
-                                    <option value="revisi" <?= $t['status_review'] === 'revisi' ? 'selected' : '' ?>>Revisi</option>
+                                    <option value="revisi" <?= $t['status_review'] === 'revisi' ? 'selected' : '' ?>>Perlu Revisi</option>
                                 </select>
                                 <select name="nilai" class="admin__select-sm" aria-label="Nilai huruf">
                                     <option value="">—</option>

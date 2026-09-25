@@ -1,5 +1,5 @@
 <?php
-// auth/login-pengajar.php — masuk dashboard pengajar dengan ID Pengajar (PGJ-XXXX) atau email.
+// auth/login-pengajar.php — masuk dashboard pengajar dengan Staff ID, ID Pengajar lama, atau email.
 // Hanya akun berperangajar aktif (peran != 'user', aktif = 1).
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
@@ -20,8 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($identitas === '' || $password === '') {
             $error = 'ID Pengajar / email dan password wajib diisi.';
         } else {
-            $stmt = $pdo->prepare("SELECT id, name, email, password, avatar, peran, id_pengajar, aktif FROM users WHERE email = ? OR id_pengajar = ? LIMIT 1");
-            $stmt->execute([$identitas, $identitas]);
+            $stmt = $pdo->prepare("SELECT id, staff_id, name, email, password, avatar, peran, id_pengajar, aktif FROM users WHERE email = ? OR staff_id = ? OR id_pengajar = ? LIMIT 1");
+            $stmt->execute([$identitas, $identitas, $identitas]);
             $user = $stmt->fetch();
             if (!$user || !password_verify($password, (string) $user['password'])) {
                 $error = 'ID / email atau password salah.';
@@ -38,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'avatar' => $user['avatar'] ?? null,
                     'peran' => $user['peran'],
                     'id_pengajar' => $user['id_pengajar'],
+                    'staff_id' => $user['staff_id'],
                     'aktif' => 1,
                 ];
                 header('Location: /pengajar/');
@@ -70,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="admin__brand-sub">AL MUTQON DASHBOARD</div>
             </div>
         </div>
-        <p class="admin__login-sub">Masuk dengan ID Pengajar (mis. PGJ-0001) atau email untuk mengelola kelas Anda.</p>
+        <p class="admin__login-sub">Masuk dengan Staff ID, ID Pengajar lama, atau email untuk mengelola kelas Anda.</p>
 
         <?php if ($error): ?>
             <div class="admin__alert admin__alert--error"><?= htmlspecialchars($error) ?></div>
@@ -79,8 +80,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <form method="POST" autocomplete="on">
             <?= csrf_field() ?>
             <div class="admin__form-group">
-                <label class="admin__form-label" for="identitas">ID Pengajar / Email</label>
-                <input type="text" id="identitas" name="identitas" class="admin__input" required autofocus placeholder="PGJ-0001 atau email">
+                <label class="admin__form-label" for="identitas">Staff ID / ID Pengajar Lama / Email</label>
+                <input type="text" id="identitas" name="identitas" class="admin__input" required autofocus placeholder="2690000001 atau email">
             </div>
             <div class="admin__form-group">
                 <label class="admin__form-label" for="password">Password</label>

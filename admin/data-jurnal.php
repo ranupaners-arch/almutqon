@@ -69,10 +69,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hapus_materi'])) {
 }
 
 $materi = $pdo->query("SELECT * FROM materi_kursus ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-$jurnal = $pdo->query("SELECT j.*, p.nama AS nama_peserta, p.program AS program_peserta, u.name AS nama_guru, u.id_pengajar FROM jurnal_peserta j LEFT JOIN pendaftar p ON p.id = j.pendaftar_id LEFT JOIN users u ON u.id = j.pengajar_id ORDER BY j.id DESC")->fetchAll(PDO::FETCH_ASSOC);
+$jurnal = $pdo->query("SELECT j.*, p.nama AS nama_peserta, p.program AS program_peserta, p.enrollment_id, u.name AS nama_guru, u.staff_id, u.id_pengajar FROM jurnal_peserta j LEFT JOIN pendaftar p ON p.id = j.pendaftar_id LEFT JOIN users u ON u.id = j.pengajar_id ORDER BY j.id DESC")->fetchAll(PDO::FETCH_ASSOC);
 
 pesan_flash();
-$totalPending = count(array_filter($jurnal, fn($j) => $j['status_review'] === 'pending'));
+$totalPending = count(array_filter($jurnal, fn($j) => $j['status_review'] === 'pending' && ($j['nilai'] ?? '') === '' && empty($j['dinilai_pada'])));
 
 $admin_title = 'Tugas Peserta';
 $admin_aktif = 'jurnal';
@@ -123,11 +123,11 @@ include __DIR__ . '/../layouts/admin-header.php';
                     <tr>
                         <td><?= (int) $j['id'] ?></td>
                         <td><strong><?= htmlspecialchars($j['judul_jurnal']) ?></strong><br><span class="sub"><?= htmlspecialchars(ucfirst((string) ($j['program_peserta'] ?? ''))) ?></span></td>
-                        <td><?= htmlspecialchars($j['nama_peserta'] ?? '-') ?><br><span class="sub"><?= htmlspecialchars($j['user_email']) ?></span></td>
-                        <td><?= $j['nama_guru'] ? htmlspecialchars($j['nama_guru']) : '<span class="sub">—</span>' ?></td>
+                        <td><?= htmlspecialchars($j['nama_peserta'] ?? '-') ?><br><span class="sub">Enrollment ID: <?= htmlspecialchars($j['enrollment_id'] ?: '-') ?></span></td>
+                        <td><?= $j['nama_guru'] ? htmlspecialchars($j['nama_guru']) . '<br><span class="sub">Staff ID: ' . htmlspecialchars($j['staff_id'] ?: $j['id_pengajar'] ?: '-') . '</span>' : '<span class="sub">-</span>' ?></td>
                         <td>
                             <span class="admin__badge admin__badge--<?= $j['status_review'] === 'acc' ? 'green' : ($j['status_review'] === 'revisi' ? 'red' : 'amber') ?>">
-                                <?= $j['status_review'] === 'acc' ? 'ACC' : ($j['status_review'] === 'revisi' ? 'Revisi' : 'Pending') ?>
+                                <?= $j['status_review'] === 'acc' ? 'ACC' : ($j['status_review'] === 'revisi' ? 'Perlu Revisi' : 'Menunggu Penilaian') ?>
                             </span><?php if (($j['dinilai_oleh'] ?? '') !== ''): ?><br><span class="sub">oleh <?= htmlspecialchars(nama_tanpa_id($j['dinilai_oleh'])) ?></span><?php endif; ?><?php if ((int) ($j['hapus_user'] ?? 0) === 1 || (int) ($j['hapus_pengajar'] ?? 0) === 1): ?><br><span class="sub">dihapus <?= (int) ($j['hapus_user'] ?? 0) === 1 ? 'user' : '' ?><?= (int) ($j['hapus_user'] ?? 0) === 1 && (int) ($j['hapus_pengajar'] ?? 0) === 1 ? ' & ' : '' ?><?= (int) ($j['hapus_pengajar'] ?? 0) === 1 ? 'pengajar' : '' ?></span><?php endif; ?>
                         </td>
                         <td><?= ($j['nilai'] ?? '') !== '' ? '<strong>' . htmlspecialchars($j['nilai']) . '</strong>' : '<span class="sub">—</span>' ?></td>

@@ -47,8 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_id'])) {
 // === Artikel terbaru ===
 $articles = $pdo->query("SELECT * FROM articles ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 
-$admin_title = 'Dashboard';
-$admin_aktif = 'dashboard';
+$admin_title = 'Artikel';
+$admin_aktif = 'artikel';
 include __DIR__ . '/../layouts/admin-header.php';
 ?>
 

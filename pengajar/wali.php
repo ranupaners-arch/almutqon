@@ -61,9 +61,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cabut_wali'])) {
     exit;
 }
 
-$wali = $pdo->query("SELECT w.*, u.name AS nama_guru, u.id_pengajar, p.nama AS nama_peserta FROM perwalian w LEFT JOIN users u ON u.id = w.pengajar_id LEFT JOIN pendaftar p ON p.id = w.pendaftar_id ORDER BY w.tipe, w.id DESC")->fetchAll(PDO::FETCH_ASSOC);
-$guru = $pdo->query("SELECT id, name, id_pengajar, peran FROM users WHERE peran != 'user' AND aktif = 1 ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
-$peserta = $pdo->query("SELECT id, nama, program, metode FROM pendaftar WHERE status_pembayaran = 'lunas' ORDER BY nama ASC")->fetchAll(PDO::FETCH_ASSOC);
+$wali = $pdo->query("SELECT w.*, u.name AS nama_guru, u.staff_id, u.id_pengajar, p.nama AS nama_peserta, p.enrollment_id FROM perwalian w LEFT JOIN users u ON u.id = w.pengajar_id LEFT JOIN pendaftar p ON p.id = w.pendaftar_id ORDER BY w.tipe, w.id DESC")->fetchAll(PDO::FETCH_ASSOC);
+$guru = $pdo->query("SELECT id, name, staff_id, id_pengajar, peran FROM users WHERE peran != 'user' AND aktif = 1 ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+$peserta = $pdo->query("SELECT id, enrollment_id, nama, program, metode FROM pendaftar WHERE status_pembayaran = 'lunas' ORDER BY nama ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 $tipeLabel = ['privat' => 'Wali Privat', 'kelompok' => 'Wali Kelompok', 'dauroh' => 'Wali Dauroh'];
 
@@ -89,7 +89,7 @@ include __DIR__ . '/../layouts/pengajar-header.php';
             <label class="admin__form-label" for="w_guru">Pengajar</label>
             <select id="w_guru" name="pengajar_id" class="admin__input" required>
                 <?php foreach ($guru as $g): ?>
-                    <option value="<?= (int) $g['id'] ?>"><?= htmlspecialchars($g['name']) ?> (<?= htmlspecialchars($g['id_pengajar'] ?: '-') ?>)</option>
+                    <option value="<?= (int) $g['id'] ?>"><?= htmlspecialchars($g['name']) ?> (<?= htmlspecialchars($g['staff_id'] ?: $g['id_pengajar'] ?: '-') ?>)</option>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -106,7 +106,7 @@ include __DIR__ . '/../layouts/pengajar-header.php';
             <select id="w_peserta" name="pendaftar_id" class="admin__input">
                 <option value="0">—</option>
                 <?php foreach ($peserta as $p): ?>
-                    <option value="<?= (int) $p['id'] ?>"><?= htmlspecialchars($p['nama']) ?> (<?= htmlspecialchars(ucfirst($p['program'])) ?> <?= htmlspecialchars($p['metode']) ?>)</option>
+                    <option value="<?= (int) $p['id'] ?>"><?= htmlspecialchars($p['nama']) ?> (<?= htmlspecialchars($p['enrollment_id'] ?: '-') ?>)</option>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -145,9 +145,9 @@ include __DIR__ . '/../layouts/pengajar-header.php';
                 <tbody>
                     <?php foreach ($wali as $w): ?>
                     <tr>
-                        <td><strong><?= htmlspecialchars($w['nama_guru'] ?? '-') ?></strong><br><span class="sub"><?= htmlspecialchars($w['id_pengajar'] ?: '') ?></span></td>
+                        <td><strong><?= htmlspecialchars($w['nama_guru'] ?? '-') ?></strong><br><span class="sub">Staff ID: <?= htmlspecialchars($w['staff_id'] ?: $w['id_pengajar'] ?: '') ?></span></td>
                         <td><span class="admin__badge admin__badge--blue"><?= $tipeLabel[$w['tipe']] ?? $w['tipe'] ?></span></td>
-                        <td><?= $w['tipe'] === 'privat' ? htmlspecialchars($w['nama_peserta'] ?? '-') : htmlspecialchars(ucfirst((string) $w['program'])) ?></td>
+                        <td><?= $w['tipe'] === 'privat' ? htmlspecialchars(($w['nama_peserta'] ?? '-') . ' (' . ($w['enrollment_id'] ?: '-') . ')') : htmlspecialchars(ucfirst((string) $w['program'])) ?></td>
                         <?php if ($isDir): ?>
                         <td style="text-align:right; white-space:nowrap">
                             <form method="POST" style="display:inline" onsubmit="return confirm('Cabut penunjukan ini?')">

@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../config/csrf.php';
 
 if (is_admin()) {
-    header('Location: daftar-artikel.php');
+    header('Location: index.php');
     exit;
 }
 
@@ -18,12 +18,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($email === '' || $password === '') {
             $error = 'Email dan password wajib diisi.';
         } else {
-            $stmt = $pdo->prepare("SELECT id, name, email, password, avatar FROM users WHERE email = ?");
+            $stmt = $pdo->prepare("SELECT id, name, email, password, avatar, peran, aktif FROM users WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
             if (!$user || !password_verify($password, $user['password'])) {
                 $error = 'Email atau password salah.';
-            } elseif (!in_array($user['email'], $ADMIN_EMAILS, true)) {
+            } elseif (($user['peran'] ?? '') !== 'admin' || (int) ($user['aktif'] ?? 0) !== 1) {
                 $error = 'Akun ini tidak memiliki akses admin.';
             } else {
                 regenerate_session();
@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'email' => $user['email'],
                     'avatar' => $user['avatar'] ?? null,
                 ];
-                header('Location: daftar-artikel.php');
+                header('Location: index.php');
                 exit;
             }
         }

@@ -26,7 +26,7 @@ include __DIR__ . '/../layouts/pengajar-header.php';
     </span>
     <div>
         <div style="font-size:18px; font-weight:800;"><?= htmlspecialchars($pg['name'] ?? '-') ?></div>
-        <div style="font-size:13px; color:var(--admin-muted);"><code><?= htmlspecialchars($pg['id_pengajar'] ?? '-') ?></code> · <?= htmlspecialchars(peran_label($pg['peran'] ?? 'pengajar')) ?></div>
+        <div style="font-size:13px; color:var(--admin-muted);">Staff ID: <code><?= htmlspecialchars($pg['staff_id'] ?? '-') ?></code> · <?= htmlspecialchars(peran_label($pg['peran'] ?? 'pengajar')) ?></div>
         <div style="font-size:13px; color:var(--admin-muted);"><?= htmlspecialchars($pg['email'] ?? '') ?></div>
     </div>
 </div>

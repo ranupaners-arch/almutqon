@@ -4,12 +4,11 @@
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/../../config/pembayaran.php';
+require_once __DIR__ . '/../../config/identity.php';
 
-$id = (int) ($_GET['id'] ?? 0);
-
-$stmt = $pdo->prepare("SELECT * FROM pendaftar WHERE id = ? LIMIT 1");
-$stmt->execute([$id]);
-$row = $stmt->fetch();
+$reference = trim((string) ($_GET['id'] ?? $_GET['enrollment_id'] ?? ''));
+$row = find_pendaftar_by_reference($pdo, $reference);
+$id = (int) ($row['id'] ?? 0);
 
 $allowed = false;
 if ($row) {
@@ -149,6 +148,7 @@ $metodeBayarLabel = match ($mb) {
             </span>
             <h1><?= $lunas ? 'Pembayaran Lunas — Selamat Bergabung!' : 'Pengajuan Program Terkirim, Silahkan Menyelesaikan Pembayaran' ?></h1>
             <p><strong><?= htmlspecialchars($row['nama']) ?></strong> · <?= htmlspecialchars($label) ?></p>
+            <p>Enrollment ID: <code><?= htmlspecialchars($row['enrollment_id'] ?: '-') ?></code></p>
         </div>
         <div class="wt__body">
 
@@ -243,7 +243,7 @@ $metodeBayarLabel = match ($mb) {
                     </a>
                     <?php endif; ?>
                 <?php else: ?>
-                    <a class="btn2 btn2--gold" href="https://wa.me/6282258442647?text=<?= rawurlencode('Halo, saya ' . $row['nama'] . ' — ingin konfirmasi pembayaran program ' . $label . ' (ID pengajuan: ' . (int) $row['id'] . ')') ?>">
+                    <a class="btn2 btn2--gold" href="https://wa.me/6282258442647?text=<?= rawurlencode('Halo, saya ' . $row['nama'] . ' ingin konfirmasi pembayaran program ' . $label . ' (Enrollment ID: ' . ($row['enrollment_id'] ?: $row['id']) . ')') ?>">
                         <span class="material-symbols-rounded" style="font-size:18px;">chat</span> Konfirmasi ke Admin
                     </a>
                 <?php endif; ?>

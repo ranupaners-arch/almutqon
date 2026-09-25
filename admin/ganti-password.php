@@ -53,7 +53,7 @@ include __DIR__ . '/../layouts/admin-header.php';
         </div>
         <div class="admin__form-row">
             <button type="submit" class="admin__btn admin__btn--primary">Simpan Password</button>
-            <a href="daftar-artikel.php" class="admin__btn admin__btn--outline">Batal</a>
+            <a href="index.php" class="admin__btn admin__btn--outline">Batal</a>
         </div>
     </form>
 </div>

@@ -1,6 +1,6 @@
 <?php
 // admin/data-pengajar.php — kelola tenaga pengajar: tambah, ubah peran, revoke/aktifkan akses, hapus.
-// Peran: Direktur + 4 Koordinator Marhalah + Pengajar. ID pengajar (PGJ-XXXX) dibuat otomatis.
+// Peran: Direktur + 4 Koordinator Marhalah + Pengajar. Staff ID baru dan ID PGJ legacy dibuat otomatis.
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../config/csrf.php';
@@ -23,32 +23,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tambah_pengajar'])) {
         || mb_strlen($email) > 150 || !isset($roles[$peran])) {
         flash_error('Isian tidak valid. Periksa nama, email, dan peran.');
     } else {
-        $stmt = $pdo->prepare("SELECT id, id_pengajar FROM users WHERE email = ? LIMIT 1");
+        $stmt = $pdo->prepare("SELECT id, member_id, staff_id, id_pengajar FROM users WHERE email = ? LIMIT 1");
         $stmt->execute([$email]);
         $ada = $stmt->fetch();
         if ($ada) {
-            $idPengajar = $ada['id_pengajar'] ?: buat_id_pengajar($pdo);
-            $up = $pdo->prepare("UPDATE users SET name = ?, peran = ?, id_pengajar = ?, aktif = 1 WHERE id = ?");
-            $up->execute([$nama, $peran, $idPengajar, (int) $ada['id']]);
-            $msg = "{$email} kini berperan {$roles[$peran]} (ID: {$idPengajar}).";
-            $su = $pdo->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
-            $su->execute([(int) $ada['id']]);
-            $vs = verif_sync_pengajar($pdo, $su->fetch() ?: [], 'upsert');
-            $msg .= $vs['ok'] ? ' Staff verifikasi tersinkron.' : (!$vs['skipped'] ? ' (Sinkron verifikasi gagal — dicatat di log.)' : '');
-            flash($msg);
+            $identityOk = false;
+            try {
+                $pdo->beginTransaction();
+                $idPengajar = $ada['id_pengajar'] ?: buat_id_pengajar($pdo);
+                $memberId = ensure_user_member_id($pdo, (int) $ada['id']);
+                $currentStaffId = (string) ($ada['staff_id'] ?? '');
+                if ($currentStaffId !== '' && !identity_is_staff_id($currentStaffId)) {
+                    throw new RuntimeException('Staff ID existing tidak valid dan memerlukan review manual.');
+                }
+                $staffId = $currentStaffId !== '' ? $currentStaffId : generate_staff_id($pdo, (int) date('Y'));
+                $up = $pdo->prepare("UPDATE users SET name = ?, peran = ?, id_pengajar = ?, staff_id = ?, aktif = 1 WHERE id = ?");
+                $up->execute([$nama, $peran, $idPengajar, $staffId, (int) $ada['id']]);
+                $pdo->commit();
+                $identityOk = true;
+            } catch (Throwable $e) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
+                error_log('[staff-identity] ' . $e->getMessage());
+                flash_error('Identitas staf tidak dapat dibuat. Data pengajar tidak diubah.');
+            }
+            if ($identityOk) {
+                $msg = "{$email} kini berperan {$roles[$peran]} (Staff ID: {$staffId}).";
+                $su = $pdo->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
+                $su->execute([(int) $ada['id']]);
+                $vs = verif_sync_pengajar($pdo, $su->fetch() ?: [], 'upsert');
+                $msg .= $vs['ok'] ? ' Staff verifikasi tersinkron.' : (!$vs['skipped'] ? ' (Sinkron verifikasi gagal, dicatat di log.)' : '');
+                flash($msg);
+            }
         } else {
             if (strlen($password) < 6) {
                 flash_error('Password baru minimal 6 karakter.');
             } else {
-                $idPengajar = buat_id_pengajar($pdo);
-                $ins = $pdo->prepare("INSERT INTO users (name, email, password, peran, id_pengajar, aktif) VALUES (?, ?, ?, ?, ?, 1)");
-                $ins->execute([$nama, $email, password_hash($password, PASSWORD_BCRYPT), $peran, $idPengajar]);
-                $msg = "Pengajar {$nama} ditambahkan (ID: {$idPengajar}).";
-                $su = $pdo->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
-                $su->execute([(int) $pdo->lastInsertId()]);
-                $vs = verif_sync_pengajar($pdo, $su->fetch() ?: [], 'upsert');
-                $msg .= $vs['ok'] ? ' Staff verifikasi tersinkron.' : (!$vs['skipped'] ? ' (Sinkron verifikasi gagal — dicatat di log.)' : '');
-                flash($msg);
+                $identityOk = false;
+                try {
+                    $pdo->beginTransaction();
+                    $memberId = generate_member_id($pdo);
+                    $staffId = generate_staff_id($pdo, (int) date('Y'));
+                    $idPengajar = buat_id_pengajar($pdo);
+                    $ins = $pdo->prepare("INSERT INTO users (member_id, staff_id, name, email, password, peran, id_pengajar, aktif) VALUES (?, ?, ?, ?, ?, ?, ?, 1)");
+                    $ins->execute([$memberId, $staffId, $nama, $email, password_hash($password, PASSWORD_BCRYPT), $peran, $idPengajar]);
+                    $newUserId = (int) $pdo->lastInsertId();
+                    $pdo->commit();
+                    $identityOk = true;
+                } catch (Throwable $e) {
+                    if ($pdo->inTransaction()) $pdo->rollBack();
+                    error_log('[staff-identity] ' . $e->getMessage());
+                    flash_error('Pengajar tidak dapat ditambahkan karena nomor identitas gagal dibuat.');
+                }
+                if ($identityOk) {
+                    $msg = "Pengajar {$nama} ditambahkan (Staff ID: {$staffId}).";
+                    $su = $pdo->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
+                    $su->execute([$newUserId]);
+                    $vs = verif_sync_pengajar($pdo, $su->fetch() ?: [], 'upsert');
+                    $msg .= $vs['ok'] ? ' Staff verifikasi tersinkron.' : (!$vs['skipped'] ? ' (Sinkron verifikasi gagal, dicatat di log.)' : '');
+                    flash($msg);
+                }
             }
         }
     }
@@ -88,15 +121,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_aktif'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_pass'])) {
     require_csrf();
     $id = (int) $_POST['reset_pass'];
-    $stmt = $pdo->prepare("SELECT name FROM users WHERE id = ? AND peran != 'user' LIMIT 1");
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ? AND peran != 'user' LIMIT 1");
     $stmt->execute([$id]);
     $row = $stmt->fetch();
     if (!$row) {
         flash_error('Data pengajar tidak ditemukan.');
     } else {
         $baru = bin2hex(random_bytes(4));
-        $pdo->prepare("UPDATE users SET password = ? WHERE id = ?")->execute([password_hash($baru, PASSWORD_BCRYPT), $id]);
-        flash("Password {$row['name']} direset menjadi: {$baru} — sampaikan ke pengajar, password ini hanya tampil sekali.");
+        $newHash = password_hash($baru, PASSWORD_DEFAULT);
+        $sync = verif_sync_password($pdo, $row, $newHash);
+        if (!$sync['ok']) {
+            error_log('[admin-reset-password] sinkronisasi verif gagal: ' . $sync['error']);
+            flash_error('Password tidak diubah karena sinkronisasi verifikasi gagal.');
+        } else {
+            $pdo->prepare("UPDATE users SET password = ? WHERE id = ?")->execute([$newHash, $id]);
+            flash("Password {$row['name']} direset menjadi: {$baru} — sampaikan ke pengajar, password ini hanya tampil sekali.");
+        }
     }
     header('Location: ' . $_SERVER['REQUEST_URI']);
     exit;
@@ -126,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hapus_pengajar'])) {
     exit;
 }
 
-$pengajar = $pdo->query("SELECT id, name, email, peran, id_pengajar, aktif, verif_staff_id, created_at FROM users WHERE peran != 'user' ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+$pengajar = $pdo->query("SELECT id, staff_id, name, email, peran, id_pengajar, aktif, verif_staff_id, created_at FROM users WHERE peran != 'user' ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 
 pesan_flash();
 $totalAktif = count(array_filter($pengajar, fn($p) => (int) $p['aktif'] === 1));
@@ -166,7 +206,7 @@ include __DIR__ . '/../layouts/admin-header.php';
 
 <div class="admin__card">
     <div class="admin__card-title">Tambah Pengajar</div>
-    <p style="font-size:13px; color:var(--admin-muted); margin:4px 0 0;">ID pengajar (PGJ-XXXX) dibuat otomatis. Bila email sudah terdaftar, perannya dinaikkan.</p>
+    <p style="font-size:13px; color:var(--admin-muted); margin:4px 0 0;">Staff ID dibuat otomatis. ID Pengajar lama tetap disimpan untuk kompatibilitas. Bila email sudah terdaftar, perannya dinaikkan.</p>
     <form method="POST" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-top:12px;">
         <?= csrf_field() ?>
         <div style="flex:2; min-width:180px;">
@@ -183,7 +223,7 @@ include __DIR__ . '/../layouts/admin-header.php';
         </div>
         <div style="flex:1; min-width:200px;">
             <label class="admin__form-label" for="pg_peran">Peran</label>
-            <select id="pg_peran" name="peran" class="admin__input">
+            <select id="pg_peran" name="peran" class="admin__input admin__select" aria-label="Peran pengajar">
                 <?php foreach ($roles as $val => $label): ?>
                     <option value="<?= $val ?>"><?= htmlspecialchars($label) ?></option>
                 <?php endforeach; ?>
@@ -201,7 +241,7 @@ include __DIR__ . '/../layouts/admin-header.php';
             <table class="admin__table">
                 <thead>
                     <tr>
-                        <th>ID Pengajar</th>
+                        <th>Identitas</th>
                         <th>Nama / Email</th>
                         <th>Peran</th>
                         <th>Status</th>
@@ -212,7 +252,10 @@ include __DIR__ . '/../layouts/admin-header.php';
                     <?php foreach ($pengajar as $p): ?>
                     <?php $aktif = (int) $p['aktif'] === 1; ?>
                     <tr>
-                        <td><code><?= htmlspecialchars($p['id_pengajar'] ?: '—') ?></code></td>
+                        <td>
+                            <strong>Staff ID:</strong> <code><?= htmlspecialchars($p['staff_id'] ?: '-') ?></code><br>
+                            <span class="sub">ID Pengajar lama: <code><?= htmlspecialchars($p['id_pengajar'] ?: '-') ?></code></span>
+                        </td>
                         <td><strong><?= htmlspecialchars($p['name']) ?></strong><br><span class="sub"><?= htmlspecialchars($p['email']) ?></span></td>
                         <td><span class="admin__badge admin__badge--<?= $badgePeran[$p['peran']] ?? 'amber' ?>"><?= htmlspecialchars(peran_label($p['peran'])) ?></span></td>
                         <td><span class="admin__badge admin__badge--<?= $aktif ? 'green' : 'gray' ?>"><?= $aktif ? 'Aktif' : 'Dicabut' ?></span>

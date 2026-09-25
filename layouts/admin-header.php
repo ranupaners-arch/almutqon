@@ -14,7 +14,8 @@ $userName     = $_SESSION['user']['name']  ?? 'Admin';
 $userEmail    = $_SESSION['user']['email'] ?? '';
 
 $__menu = [
-    'dashboard'  => ['label' => 'Dashboard',       'href' => 'daftar-artikel.php',  'icon' => 'dashboard'],
+    'dashboard'  => ['label' => 'Dashboard',       'href' => 'index.php',           'icon' => 'dashboard'],
+    'artikel'    => ['label' => 'Artikel',         'href' => 'daftar-artikel.php',  'icon' => 'article'],
     'tulis'      => ['label' => 'Tulis Artikel',    'href' => 'tambah-artikel.php',  'icon' => 'edit_note'],
     'pendaftar'  => ['label' => 'Data Pendaftar',   'href' => 'data-pendaftar.php',  'icon' => 'groups'],
     'pengajar'   => ['label' => 'Data Pengajar',    'href' => 'data-pengajar.php',   'icon' => 'supervisor_account'],
@@ -40,7 +41,7 @@ $__menu = [
     <?php if (!empty($admin_quill)): ?>
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <?php endif; ?>
-    <link rel="stylesheet" href="/css/admin.css?v=20260917g">
+    <link rel="stylesheet" href="/css/admin.css?v=20260925f">
 </head>
 <body>
 
@@ -48,7 +49,7 @@ $__menu = [
 
     <!-- =================== SIDEBAR =================== -->
     <aside class="admin__sidebar" id="adminSidebar">
-        <a class="admin__brand" href="daftar-artikel.php">
+        <a class="admin__brand" href="index.php">
             <img src="/assets/1.png" alt="Logo" class="admin__brand-img">
             <div>
                 <div class="admin__brand-text">AL MUTQON</div>

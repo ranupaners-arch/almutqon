@@ -22,11 +22,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hapus_tugas'])) {
     exit;
 }
 
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM pendaftar WHERE user_email = ? AND status_pembayaran = 'lunas'");
-$stmt->execute([$email]);
+$userId = (int) ($_SESSION['user']['id'] ?? 0);
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM pendaftar WHERE (user_id = ? OR (user_id IS NULL AND user_email = ?)) AND status_pembayaran = 'lunas'");
+$stmt->execute([$userId, $email]);
 $programAktif = (int) $stmt->fetchColumn();
 
-$stmt = $pdo->prepare("SELECT j.id, j.judul_jurnal, j.status_review, j.nilai, j.diunggah_pada, j.dinilai_oleh, p.program, p.metode, u.name AS nama_guru, u.id_pengajar FROM jurnal_peserta j LEFT JOIN pendaftar p ON p.id = j.pendaftar_id LEFT JOIN users u ON u.id = j.pengajar_id WHERE j.user_email = ? AND j.hapus_user = 0 ORDER BY j.id DESC");
+$stmt = $pdo->prepare("SELECT j.id, j.judul_jurnal, j.status_review, j.nilai, j.diunggah_pada, j.dinilai_oleh, p.program, p.metode, p.enrollment_id, u.name AS nama_guru, u.staff_id, u.id_pengajar FROM jurnal_peserta j LEFT JOIN pendaftar p ON p.id = j.pendaftar_id LEFT JOIN users u ON u.id = j.pengajar_id WHERE j.user_email = ? AND j.hapus_user = 0 ORDER BY j.id DESC");
 $stmt->execute([$email]);
 $riwayat = $stmt->fetchAll();
 
@@ -96,7 +97,7 @@ include __DIR__ . '/../../layouts/akun-header.php';
                             <td><?= $j['nama_guru'] ? htmlspecialchars($j['nama_guru']) : '<span class="sub">—</span>' ?></td>
                             <td>
                                 <span class="admin__badge admin__badge--<?= $j['status_review'] === 'acc' ? 'green' : ($j['status_review'] === 'revisi' ? 'red' : 'amber') ?>">
-                                    <?= $j['status_review'] === 'acc' ? 'ACC' : ($j['status_review'] === 'revisi' ? 'Revisi' : 'Pending') ?>
+                                <?= $j['status_review'] === 'acc' ? 'ACC' : ($j['status_review'] === 'revisi' ? 'Perlu Revisi' : 'Terkirim') ?>
                                 </span>
                             </td>
                             <td><?= ($j['nilai'] ?? '') !== '' ? '<strong style="font-size:16px;">' . htmlspecialchars($j['nilai']) . '</strong>' : '<span class="sub">—</span>' ?></td>

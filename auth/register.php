@@ -3,6 +3,7 @@ session_start();
 require_once '../config/database.php';
 require_once '../config/csrf.php';
 require_once '../config/auth.php';
+require_once '../config/identity.php';
 
 header('Content-Type: application/json');
 
@@ -51,15 +52,20 @@ if ($stmt->fetch()) {
  $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 
 try {
-    $stmt = $pdo->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
-    $stmt->execute([$name, $email, $hashedPassword]);
-} catch (PDOException $e) {
+    $pdo->beginTransaction();
+    $memberId = generate_member_id($pdo);
+    $stmt = $pdo->prepare("INSERT INTO users (member_id, name, email, password) VALUES (?, ?, ?, ?)");
+    $stmt->execute([$memberId, $name, $email, $hashedPassword]);
+    $userId = (int) $pdo->lastInsertId();
+    $pdo->commit();
+} catch (Throwable $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     error_log('[register] ' . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'Data tidak dapat disimpan. Periksa kembali nama/email Anda.']);
     exit;
 }
-
- $userId = $pdo->lastInsertId();
 
  $user = [
     'id' => (int) $userId,

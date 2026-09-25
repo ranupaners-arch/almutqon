@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['kirim_materi'])) {
             if (!move_uploaded_file($_FILES['file_materi']['tmp_name'], $dir . $newName)) {
                 flash_error('Gagal menyimpan file materi.');
             } else {
-                $oleh = ($_SESSION['pengajar']['name'] ?? 'Pengajar') . ' (' . ($_SESSION['pengajar']['id_pengajar'] ?? '-') . ')';
+                $oleh = ($_SESSION['pengajar']['name'] ?? 'Pengajar') . ' (' . ($_SESSION['pengajar']['staff_id'] ?? $_SESSION['pengajar']['id_pengajar'] ?? '-') . ')';
                 $stmt = $pdo->prepare("INSERT INTO materi_kursus (program, judul, path_file, diunggah_oleh) VALUES (?, ?, ?, ?)");
                 $stmt->execute([$program, $judul, 'assets/materi/' . $newName, mb_strimwidth($oleh, 0, 100, '')]);
                 flash('Materi "' . mb_strimwidth($judul, 0, 60, '…') . '" terkirim.');

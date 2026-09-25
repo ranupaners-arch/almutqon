@@ -1,11 +1,13 @@
 <?php
-// config/pengajar.php — peran tenaga pengajar + generator ID pengajar
+// config/pengajar.php — peran tenaga pengajar + dukungan ID pengajar legacy
 require_once __DIR__ . '/database.php';
+require_once __DIR__ . '/identity.php';
 
 // Daftar peran tenaga pengajar (value => label). 'user' = peserta biasa (bukan pengajar).
 function peran_pengajar_options(): array
 {
     return [
+        'admin'            => 'Admin',
         'direktur'         => 'Direktur',
         'koor_mubtadi'     => "Koordinator Marhalah Mubtadi'",
         'koor_mutawassith' => 'Koordinator Marhalah Mutawassith',
@@ -40,13 +42,16 @@ function nama_tanpa_id(string $nama): string
 // (menghormati matriks izin verif: admin tak boleh mengelola direktur).
 function peran_to_verif_role(string $peran): string
 {
+    if ($peran === 'admin') {
+        return 'admin';
+    }
     if ($peran === 'direktur') {
         return 'direktur';
     }
     return 'staff';
 }
 
-// Buat ID pengajar unik format PGJ-XXXX (bebas duplikat walau ada yang dihapus).
+// ID PGJ dipertahankan untuk login dan integrasi legacy selama masa transisi.
 function buat_id_pengajar(PDO $pdo): string
 {
     for ($i = 0; $i < 50; $i++) {
