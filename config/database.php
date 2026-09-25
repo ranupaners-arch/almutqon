@@ -43,5 +43,7 @@ try {
         ]
     );
 } catch (PDOException $e) {
-    die("Koneksi database gagal: " . $e->getMessage());
+    error_log('Database connection failed: ' . $e->getMessage());
+    http_response_code(500);
+    exit('Terjadi gangguan koneksi database. Silakan hubungi administrator.');
 }

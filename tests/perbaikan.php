@@ -362,9 +362,15 @@ if ($pdo) {
 
         $vrow = $pdo->query("SELECT * FROM pendaftar WHERE id={$vid}")->fetch(PDO::FETCH_ASSOC);
         t('kolom verif_token/code/url terisi', !empty($vrow['verif_token']) && !empty($vrow['verif_code']) && !empty($vrow['verif_url']));
+        t('verif_status=synced + attempts terhitung', $vrow['verif_status'] === 'synced' && (int) $vrow['verif_attempts'] >= 1);
         $vinv = (string) $vrow['no_invoice'];
         $vd = $verPdo->query('SELECT * FROM dokumen WHERE no_surat=' . $verPdo->quote($vinv))->fetch(PDO::FETCH_ASSOC);
         t('dokumen verif aktif + PDF tersimpan', $vd && $vd['status'] === 'active' && !empty($vd['pdf_path']));
+
+        $vdup = verif_api('create', ['no_surat' => $vinv, 'perihal' => 'Uji', 'penerima' => 'Uji', 'tanggal_dokumen' => '2026-01-01']);
+        t('create idempoten -> token sama (retry aman)', $vdup['ok'] === true && ($vdup['data']['token'] ?? '') === $vrow['verif_token']);
+        $vbad = verif_api('create', []);
+        t('create tanpa no_surat -> 400', $vbad['ok'] === false && $vbad['http'] === 400, 'HTTP ' . $vbad['http']);
 
         $r = http('GET', "{$baseUrl}/pages/bayar/struk.php?no=" . urlencode($vinv), $jarV);
         $bk = stripos($r['body'], 'VERIFIKASI KEASLIAN DOKUMEN') === false && stripos($r['body'], 'Penerima / Orang Tua') === false;

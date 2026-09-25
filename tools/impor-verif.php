@@ -9,13 +9,15 @@
 // Cara pakai:
 //   php tools/impor-verif.php --dry-run   (daftar kandidat tanpa mengubah apa pun)
 //   php tools/impor-verif.php [--limit=N]
-//   php tools/impor-verif.php --perbaiki [--dry-run]
+//   php tools/impor-verif.php --force     (lampaui batas percobaan 5x/baris)
+//   php tools/impor-verif.php --perbaiki [--dry-run] [--force]
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/pembayaran.php';
 require_once __DIR__ . '/../config/pdf.php';
 require_once __DIR__ . '/../config/verif-client.php';
 
 $dryRun = in_array('--dry-run', $argv, true);
+$force = in_array('--force', $argv, true);
 $limit = 0;
 foreach ($argv as $a) {
     if (str_starts_with($a, '--limit=')) {
@@ -23,14 +25,32 @@ foreach ($argv as $a) {
     }
 }
 
+// Batas percobaan per baris: baris yang berulang gagal dilewati kecuali --force.
+$MAX_ATTEMPTS = 5;
+$failedEq = $force
+    ? "1 = 1"
+    : "COALESCE(verif_attempts, 0) < {$MAX_ATTEMPTS}";
+
 $sql = "SELECT * FROM pendaftar
         WHERE status_pembayaran = 'lunas' AND no_invoice <> ''
-          AND (verif_token IS NULL OR verif_token = '')
+          AND (verif_token IS NULL OR verif_token = '' OR verif_status = 'failed')
+          AND (
+            COALESCE(verif_status, '') <> 'failed'
+            OR {$failedEq}
+          )
         ORDER BY id ASC";
-if ($limit > 0) {
-    $sql .= ' LIMIT ' . $limit;
-}
 $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+if ($limit > 0 && count($rows) > $limit) {
+    $rows = array_slice($rows, 0, $limit);
+}
+$skippedCap = 0;
+if (!$force && !$dryRun) {
+    $skippedCap = (int) $pdo->query(
+        "SELECT COUNT(*) FROM pendaftar
+         WHERE status_pembayaran = 'lunas' AND no_invoice <> ''
+           AND verif_status = 'failed' AND COALESCE(verif_attempts, 0) >= {$MAX_ATTEMPTS}"
+    )->fetchColumn();
+}
 
 $synced = (int) $pdo->query(
     "SELECT COUNT(*) FROM pendaftar
@@ -38,7 +58,7 @@ $synced = (int) $pdo->query(
        AND verif_token IS NOT NULL AND verif_token <> ''"
 )->fetchColumn();
 
-echo 'Kandidat impor: ' . count($rows) . ' (sudah sinkron: ' . $synced . ')' . "\n";
+echo 'Kandidat impor: ' . count($rows) . ' (sudah sinkron: ' . $synced . ')' . ($skippedCap > 0 ? " — {$skippedCap} baris gagal & menunggu --force (maks {$MAX_ATTEMPTS}x)" : '') . "\n";
 if ($dryRun && !in_array('--perbaiki', $argv, true)) {
     foreach ($rows as $r) {
         echo '  - ' . $r['no_invoice'] . ' | ' . $r['nama'] . ' | ' . $r['program'] . "\n";

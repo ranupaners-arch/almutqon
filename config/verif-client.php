@@ -30,6 +30,15 @@ function verif_load_env(): void
     }
 }
 
+// http:// hanya untuk host pengembangan (localhost/127.0.0.1/::1/*.test/*.local).
+// http:// untuk host non-lokal dianggap miskonfigurasi → integrasi dinonaktifkan + log.
+function verif_url_lokal(string $url): bool
+{
+    $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?: ''));
+    return $host === 'localhost' || $host === '127.0.0.1' || $host === '::1'
+        || str_ends_with($host, '.test') || str_ends_with($host, '.local');
+}
+
 function verif_config(): array
 {
     verif_load_env();
@@ -37,7 +46,12 @@ function verif_config(): array
     $token = getenv('VERIF_API_TOKEN');
     $url = ($url !== false) ? rtrim(trim((string) $url), '/') : '';
     $token = ($token !== false) ? trim((string) $token) : '';
-    return ['url' => $url, 'token' => $token, 'enabled' => ($url !== '' && $token !== '')];
+    $enabled = ($url !== '' && $token !== '');
+    if ($enabled && str_starts_with($url, 'http://') && !verif_url_lokal($url)) {
+        error_log('[verif-api] VERIF_API_URL memakai http:// untuk host non-lokal — integrasi dinonaktifkan. Gunakan https:// di produksi.');
+        $enabled = false;
+    }
+    return ['url' => $url, 'token' => $token, 'enabled' => $enabled];
 }
 
 // Panggil API v1. $pdfPath opsional (path file PDF lokal untuk field `pdf`).
@@ -92,6 +106,24 @@ function verif_api(string $action, array $fields, ?string $pdfPath = null, strin
     return ['ok' => false, 'skipped' => false, 'http' => $http, 'data' => $dec['data'] ?? null, 'error' => $msg];
 }
 
+// Rekam status sinkronisasi verifikasi di pendaftar (pending/synced/failed).
+// Dipakai reconciliation (tools/impor-verif.php) + diagnostik admin.
+function verif_tanda_status(PDO $pdo, int $pendaftarId, string $status, string $error = ''): void
+{
+    if ($error !== '') {
+        $error = function_exists('mb_substr') ? mb_substr($error, 0, 500) : substr($error, 0, 500);
+    }
+    $stmt = $pdo->prepare(
+        "UPDATE pendaftar
+         SET verif_status = ?,
+             verif_last_error = ?,
+             verif_attempts = COALESCE(verif_attempts, 0) + 1,
+             verif_synced_at = CASE WHEN ? = 1 THEN NOW() ELSE verif_synced_at END
+         WHERE id = ?"
+    );
+    $stmt->execute([$status, $error, ($status === 'synced') ? 1 : 0, $pendaftarId]);
+}
+
 // Daftarkan struk LUNAS sebagai dokumen terverifikasi + simpan rujukan ke pendaftar.
 // $row = baris pendaftar (wajib: id, no_invoice, nama, tanggal_bayar). $pdfBytes = isi PDF struk
 // (tanpa QR) — dipakai sebagai fallback bila PDF ber-QR gagal dibuat.
@@ -129,6 +161,9 @@ function verif_register_doc(PDO $pdo, int $pendaftarId, array $row, string $admi
     $res = verif_api('create', $fields);
 
     if (!$res['ok']) {
+        if (!$res['skipped']) {
+            verif_tanda_status($pdo, $pendaftarId, 'failed', $res['error']);
+        }
         return ['ok' => false, 'skipped' => $res['skipped'], 'code' => '', 'url' => '', 'error' => $res['error']];
     }
     $data = is_array($res['data']) ? $res['data'] : [];
@@ -136,6 +171,7 @@ function verif_register_doc(PDO $pdo, int $pendaftarId, array $row, string $admi
     $verifCode = (string) ($data['code_6digit'] ?? '');
     $stmt = $pdo->prepare('UPDATE pendaftar SET verif_token = ?, verif_code = ?, verif_url = ? WHERE id = ?');
     $stmt->execute([(string) ($data['token'] ?? ''), $verifCode, $verifUrl, $pendaftarId]);
+    verif_tanda_status($pdo, $pendaftarId, 'synced');
 
     // 2) + 3) Generate PDF ber-QR lalu unggah (best-effort; fallback $pdfBytes apa adanya).
     $upload = $pdfBytes;

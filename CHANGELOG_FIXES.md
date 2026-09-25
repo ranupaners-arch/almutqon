@@ -2,7 +2,40 @@
 
 Catatan perbaikan bug. Terbaru di ATAS. Ditulis sesudah fix terverifikasi.
 
-### Fix #4 — Gambar QRIS donasi 404 (referensi `.png`, file asli `.jpeg`)
+### Fix #5 — Bocoran detail error koneksi DB ke browser + tanpa template `.env.example`
+
+**Gejala:** `config/database.php:46` menampilkan `$e->getMessage()` (host/user/nama DB) ke browser saat koneksi gagal; repositori belum punya `.env.example` sehingga setup environment tidak terdokumentasi.
+
+**Akar:** Pola `die("Koneksi database gagal: " . ...)` diwarisi dari awal; proyek verif.almutqon sudah menerapkan pola aman (`app/Config/database.php:22-25`) tapi almutqon tidak.
+
+| | |
+|---|---|
+| **Tanggal** | 2026-09-24 |
+| **File** | `config/database.php`, `.env.example` (baru) |
+| **Masalah** | Bocor detail koneksi DB ke publik; tidak ada template `VERIF_API_URL/TOKEN`, SMTP, WA, cron di repo |
+| **Akar** | `die($e->getMessage())` tanpa `error_log`; `.env.example` tak pernah dibuat (whitelist `!.env.example` di `.gitignore` sudah ada sejak awal) |
+| **Fix** | Sambaran ke pola verif: `error_log` + `http_response_code(500)` + pesan umum; buat `.env.example` (placeholder, tanpa secret; semua key `.env` live ada di template — diverifikasi via diff) |
+| **Verifikasi** | `php -l` lolos; saat DB mati, output browser hanya pesan umum + detail di log (terbukti saat migrasi gagal awal); `diff` key `.env` vs `.env.example` → identik; `git status` menunjukkan `?? .env.example` (tidak ter-ignore) |
+| **Pelajaran** | Pola error DB yang benar sudah ada di proyek saudara — salin, jangan buat baru; template env sebaiknya lahir sejak migrasi env pertama |
+| **Log Keyword** | database.php, PDOException, error leak, .env.example, template env |
+
+### Fix #6 — Resiliensi sinkronisasi verifikasi: status/retry/HTTPS non-fatal
+
+**Gejala:** LUNAS bisa tercatat di almutqon tetapi gagal terdaftar di sistem verif tanpa jejak yang mudah dideteksi; `VERIF_API_URL` tidak dijamin HTTPS di produksi; rekonsiliasi hanya mengandalkan token kosong tanpa batas percobaan.
+
+**Akar:** Klien verif sengaja best-effort (gagal API tak menggagalkan LUNAS, `config/verif-client.php:4`) tapi tidak merekam status kegagalan; keputusan ini konsisten dengan `CATATAN.md:502` (tolak bridge lintas-DB).
+
+| | |
+|---|---|
+| **Tanggal** | 2026-09-24 |
+| **File** | `config/verif-client.php`, `config/schema-verif.php` (+4 kolom), `tools/impor-verif.php`, `tests/perbaikan.php` |
+| **Masalah** | Tidak ada jejak kegagalan sinkronisasi; HTTP non-lokal bisa dipakai tak sengaja di produksi; tool impor mengambil ulang baris gagal tanpa batas |
+| **Akar** | Alur best-effort tanpa observabilitas status; tidak ada pemisah host lokal/dev vs produksi; batas percobaan (backoff/retry-cap) tak ada |
+| **Fix** | (1) `verif_config()` blokir `http://` utk host non-lokal (`*.test/localhost/127.0.0.1` boleh) → integrasi nonaktif + `error_log` jelas; (2) kolom `verif_status/attempts/last_error/synced_at` di-record tiap panggilan (`verif_tanda_status()`), `synced` saat sukses, `failed`+pesan terpotong 500 saat gagal tak-skipped; (3) `impor-verif.php` memasukkan baris `status='failed'` + batas 5x per baris (`--force` untuk lampaui); (4) regresi e2e bertambah: asersi `verif_status=synced`, create idempoten (token sama), create tanpa no_surat → 400 |
+| **Verifikasi** | `php -l` bersih; runtime: config HTTPS (`.test`→enabled, `http://situs.com`→disabled+log); DB-level: `verif_tanda_status` failed→synced benar, `verif_register_doc` ke API mati → `failed`+attempts naik+last_error terpotong, cleanup bersih; `impor-verif --dry-run` = 0 kandidat/1 sinkron; migrasi dev +4 kolom OK + backfill 1 baris synced |
+| **Pelajaran** | Observabilitas (status per baris) lebih murah & efektif daripada outbox/queue penuh untuk integrasi 1 konsumen-2 endpoint; selalu bedakan host lokal vs produksi pada kredensial URL |
+| **Log Keyword** | verif, sinkronisasi, verif_status, retry, impor-verif, HTTPS, best-effort |
+| **Deploy** | BELUM — wajib: `php config/schema-verif.php` di DB **live**; pastikan `VERIF_API_URL` live `https://`; regresi e2e penuh belum dijalankan (butuh password admin + web server lokal) |
 
 **Gejala:** Halaman tunggu pembayaran & modal donasi menampilkan gambar QRIS kosong (ikon rusak/404) saat metode QRIS dipilih atau status LUNAS ditampilkan.
 
