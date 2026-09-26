@@ -187,6 +187,7 @@ $metodeBayarLabel = match ($mb) {
                         </button>
                         <?php endif; ?>
                     </div>
+                    <?php if ((int) ($row['diskon_nominal'] ?? 0) > 0): ?><small style="display:block;margin-top:6px;color:#64748b">Harga awal <?= rupiah((int) $row['biaya_awal']) ?> · Diskon <?= rupiah((int) $row['diskon_nominal']) ?><?= !empty($row['kode_diskon']) ? ' (' . htmlspecialchars($row['kode_diskon']) . ')' : '' ?></small><?php endif; ?>
                 </div>
                 <div class="box">
                     <h3>Metode Pembayaran</h3>

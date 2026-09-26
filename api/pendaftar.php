@@ -42,6 +42,7 @@ $alamat = trim($_POST['alamat'] ?? '');
 $instansi = trim($_POST['instansi'] ?? '');
 $jumlah_peserta = (int) ($_POST['jumlah_peserta'] ?? 0);
 $catatan = trim($_POST['catatan'] ?? '');
+$kodeDiskon = strtoupper(trim($_POST['kode_diskon'] ?? ''));
 
 if (!in_array($program, ['offline', 'online', 'dauroh'], true)) {
     echo json_encode(['success' => false, 'message' => 'Program tidak dikenali.']);
@@ -138,7 +139,18 @@ if ($program === 'dauroh' && !in_array($metode, ['Offline', 'Online'], true)) {
 }
 
 $hitung = hitung_biaya_kursus($program, $metode, $jumlah_peserta);
-$biaya = $hitung['biaya'];
+$biayaAwal = (int) $hitung['biaya'];
+$diskon = null;
+$diskonNominal = 0;
+if ($kodeDiskon !== '') {
+    $diskon = cari_diskon($pdo, $kodeDiskon, $program, $metode);
+    if (!$diskon) {
+        echo json_encode(['success' => false, 'message' => 'Kode diskon tidak valid atau sudah tidak berlaku.']);
+        exit;
+    }
+    $diskonNominal = hitung_diskon($diskon, $biayaAwal);
+}
+$biaya = $biayaAwal - $diskonNominal;
 $user_email = $_SESSION['user']['email'] ?? '';
 $userId = (int) $_SESSION['user']['id'];
 try {
@@ -147,9 +159,12 @@ try {
     $batchCode = '01';
     $enrollmentId = generate_enrollment_id($pdo, (int) date('Y'), $program, $batchCode);
     $stmt = $pdo->prepare("INSERT INTO pendaftar
-        (user_id, enrollment_id, batch_code, program, nama, nama_panggilan, jenis_kelamin, usia, whatsapp, metode, alamat, instansi, jumlah_peserta, catatan, user_email, biaya, metode_pembayaran, kanal_pembayaran, batas_bayar)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR))");
-    $stmt->execute([$userId, $enrollmentId, $batchCode, $program, $nama, $nama_panggilan, $jenis_kelamin, $usia, $whatsapp, $metode, $alamat, $instansi, $jumlah_peserta, $catatan, $user_email, $biaya, $metodeBayar, $kanal]);
+        (user_id, enrollment_id, batch_code, program, nama, nama_panggilan, jenis_kelamin, usia, whatsapp, metode, alamat, instansi, jumlah_peserta, catatan, user_email, biaya_awal, diskon_id, diskon_nominal, kode_diskon, biaya, metode_pembayaran, kanal_pembayaran, batas_bayar)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR))");
+    $stmt->execute([$userId, $enrollmentId, $batchCode, $program, $nama, $nama_panggilan, $jenis_kelamin, $usia, $whatsapp, $metode, $alamat, $instansi, $jumlah_peserta, $catatan, $user_email, $biayaAwal, $diskon['id'] ?? null, $diskonNominal, $kodeDiskon, $biaya, $metodeBayar, $kanal]);
+    if ($diskon) {
+        $pdo->prepare('UPDATE program_discounts SET terpakai = terpakai + 1 WHERE id = ?')->execute([(int) $diskon['id']]);
+    }
     $id = (int) $pdo->lastInsertId();
     $pdo->commit();
 } catch (PDOException $e) {
@@ -239,6 +254,8 @@ echo json_encode([
     'email_terkirim' => $emailTerkirim,
     'wa_terkirim' => $waTerkirim,
     'biaya' => $biaya,
+    'biaya_awal' => $biayaAwal,
+    'diskon' => $diskonNominal,
     'biaya_rupiah' => rupiah($biaya),
     'program_label' => $hitung['label'],
     'metode_bayar' => $metodeBayar,

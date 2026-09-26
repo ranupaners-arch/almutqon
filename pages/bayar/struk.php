@@ -119,6 +119,7 @@ $metodeBayar = match ($row['metode_pembayaran']) {
 
         <div class="box-amount">
             <div class="row"><span>Total Pembayaran</span><strong><?= rupiah((int) $row['biaya']) ?></strong></div>
+            <?php if ((int) ($row['diskon_nominal'] ?? 0) > 0): ?><div class="row"><span>Diskon <?= !empty($row['kode_diskon']) ? '(' . htmlspecialchars($row['kode_diskon']) . ')' : '' ?></span><span>-<?= rupiah((int) $row['diskon_nominal']) ?></span></div><?php endif; ?>
             <div class="row"><span>Terbilang</span><span><?= htmlspecialchars(ucfirst(terbilang((int) $row['biaya'])) . ' rupiah') ?></span></div>
             <div class="row"><span>Metode Pembayaran</span><span><?= htmlspecialchars($metodeBayar) ?></span></div>
             <div class="row total"><span>Status</span><span class="status <?= $lunas ? 'lunas' : 'belum' ?>"><?= $lunas ? 'LUNAS' : strtoupper($row['status_pembayaran'] ?? 'belum') ?></span></div>

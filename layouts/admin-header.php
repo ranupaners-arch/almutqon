@@ -20,6 +20,7 @@ $__menu = [
     'pendaftar'  => ['label' => 'Data Pendaftar',   'href' => 'data-pendaftar.php',  'icon' => 'groups'],
     'pengajar'   => ['label' => 'Data Pengajar',    'href' => 'data-pengajar.php',   'icon' => 'supervisor_account'],
     'pembayaran' => ['label' => 'Pembayaran Kursus', 'href' => 'data-pembayaran.php', 'icon' => 'payments'],
+    'program'    => ['label' => 'Harga & Diskon',   'href' => 'program.php',          'icon' => 'sell'],
     'donasi'     => ['label' => 'Data Donasi',      'href' => 'data-donasi.php',     'icon' => 'volunteer_activism'],
     'agenda'     => ['label' => 'Agenda Kegiatan',  'href' => 'data-agenda.php',     'icon' => 'calendar_month'],
     'jurnal'     => ['label' => 'Tugas Peserta',    'href' => 'data-jurnal.php',     'icon' => 'menu_book'],

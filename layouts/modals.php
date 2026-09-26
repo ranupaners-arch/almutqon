@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/pembayaran.php';
+$__daurohMin = (int) (biaya_kursus_config()['dauroh']['min_peserta'] ?? 40);
 
 // Render panel pilihan bank / e-wallet (dipakai 3 form program + modal donasi).
 // Form hanya menampilkan logo + nama kanal; kode antarbank & nomor rekening
@@ -91,6 +92,7 @@ $renderPayPanels = function (string $prefix) use ($__payBanks, $__payWallets, $p
                 <div class="row"><span>Total Bayar</span><strong class="pb-total" id="offline_total">Rp636.000</strong></div>
                 <div class="row"><span>Keterangan</span><span class="pb-ket" id="offline_ket">Privat · ±2 jam / sesi (Rp318.000 / jam)</span></div>
             </div>
+            <div class="auth__input-group"><label for="offline_kode_diskon">Kode Diskon (opsional)</label><input type="text" id="offline_kode_diskon" name="kode_diskon" maxlength="40" autocomplete="off" placeholder="Masukkan kode promo jika ada"></div>
             <div class="modal__section" style="margin-bottom: 16px;" data-pay-group="offline">
                 <h3 class="modal__label">Metode Pembayaran *</h3>
                 <div class="modal__methods">
@@ -144,6 +146,7 @@ $renderPayPanels = function (string $prefix) use ($__payBanks, $__payWallets, $p
                 <div class="row"><span>Total Bayar</span><strong class="pb-total" id="online_total">Rp298.500</strong></div>
                 <div class="row"><span>Keterangan</span><span class="pb-ket" id="online_ket">Privat · ±90 menit / sesi (Rp199.000 / jam)</span></div>
             </div>
+            <div class="auth__input-group"><label for="online_kode_diskon">Kode Diskon (opsional)</label><input type="text" id="online_kode_diskon" name="kode_diskon" maxlength="40" autocomplete="off" placeholder="Masukkan kode promo jika ada"></div>
             <div class="modal__section" style="margin-bottom: 16px;" data-pay-group="online">
                 <h3 class="modal__label">Metode Pembayaran *</h3>
                 <div class="modal__methods">
@@ -193,7 +196,7 @@ $renderPayPanels = function (string $prefix) use ($__payBanks, $__payWallets, $p
             <div class="auth__input-group"><label for="dauroh_usia">Usia *</label><input type="number" id="dauroh_usia" name="usia" min="1" max="120" required placeholder="Contoh: 20"></div>
             <div class="auth__input-group"><label for="dauroh_whatsapp">Nomor WhatsApp *</label><input type="tel" id="dauroh_whatsapp" name="whatsapp" maxlength="30" required></div>
             <div class="auth__input-group"><label for="dauroh_instansi">Instansi/Komunitas</label><input type="text" id="dauroh_instansi" name="instansi" maxlength="120"></div>
-            <div class="auth__input-group"><label for="dauroh_jumlah">Jumlah Peserta * (min 40)</label><input type="number" id="dauroh_jumlah" name="jumlah_peserta" required min="40" value="40"></div>
+            <div class="auth__input-group"><label for="dauroh_jumlah">Jumlah Peserta * (min <?= $__daurohMin ?>)</label><input type="number" id="dauroh_jumlah" name="jumlah_peserta" required min="<?= $__daurohMin ?>" value="<?= $__daurohMin ?>"></div>
             <div class="auth__input-group"><label for="dauroh_metode">Metode *</label>
                 <select id="dauroh_metode" name="metode" required><option value="Online">Online</option><option value="Offline">Offline</option></select>
             </div>
@@ -201,6 +204,7 @@ $renderPayPanels = function (string $prefix) use ($__payBanks, $__payWallets, $p
                 <div class="row"><span>Total Bayar</span><strong class="pb-total" id="dauroh_total">Rp2.800.000</strong></div>
                 <div class="row"><span>Keterangan</span><span class="pb-ket" id="dauroh_ket">Online · 70.000 / orang × 40 peserta</span></div>
             </div>
+            <div class="auth__input-group"><label for="dauroh_kode_diskon">Kode Diskon (opsional)</label><input type="text" id="dauroh_kode_diskon" name="kode_diskon" maxlength="40" autocomplete="off" placeholder="Masukkan kode promo jika ada"></div>
             <div class="modal__section" style="margin-bottom: 16px;" data-pay-group="dauroh">
                 <h3 class="modal__label">Metode Pembayaran *</h3>
                 <div class="modal__methods">
