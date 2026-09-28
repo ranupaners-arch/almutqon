@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../tools/cli-only.php';
+
 // Tes format, immutability, sequence, prefix, dan rollback generator identitas.
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/identity.php';

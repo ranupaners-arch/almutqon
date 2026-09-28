@@ -1,7 +1,7 @@
 <?php
-// config/schema-theme.php — migrasi sekali jalan: tambah kolom theme di tabel users
-// Jalankan: php config/schema-theme.php
-require_once __DIR__ . '/../config/database.php';
+// Migrasi preferensi tema pengguna.
+require_once dirname(__DIR__, 2) . '/tools/cli-only.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 $exists = $pdo->query("SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'theme'")->fetchColumn();
 

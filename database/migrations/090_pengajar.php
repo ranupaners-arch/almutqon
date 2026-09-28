@@ -1,10 +1,10 @@
 <?php
-// config/schema-pengajar.php — migrasi idempoten: peran, ID pengajar & status aktif di tabel `users`
+// Migrasi peran, ID pengajar, dan status aktif pada tabel users.
 // - peran: user (peserta biasa) + 6 peran tenaga pengajar
 // - id_pengajar: kode unik (mis. PGJ-0001), NULL untuk non-pengajar
 // - aktif: 0 = akses dicabut (revoke) → login publik ditolak
-// Jalankan: php config/schema-pengajar.php
-require_once __DIR__ . '/database.php';
+require_once dirname(__DIR__, 2) . '/tools/cli-only.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 function tambah_kolom_pengajar(PDO $pdo, string $column, string $definition): void
 {

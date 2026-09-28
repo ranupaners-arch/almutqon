@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/cli-only.php';
+
 // tools/padankan-staf.php — pairing satu-kali ID pengajar almutqon ↔ staff verif.almutqon.
 // Aturan (diputuskan 18 Sep, format ID TIDAK diubah):
 //   - Pasangan eksplisit: users.id=1 (direktur PGJ-1520) ↔ staff.id=2 (NIP 202501001

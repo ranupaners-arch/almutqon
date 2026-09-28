@@ -1,10 +1,11 @@
 <?php
 // api/upload-jurnal.php — terima unggahan jurnal ilmiah/tugas akhir peserta (POST klasik + PRG).
 // Syarat: sudah login, CSRF valid, program milik sendiri berstatus LUNAS,
-// file PDF/DOC/DOCX maksimal 5MB. File disimpan acak di assets/jurnal/.
+// file PDF/DOC/DOCX maksimal 5MB. File disimpan acak di storage privat.
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../config/csrf.php';
+require_once __DIR__ . '/../config/storage.php';
 
 $kembali = '/pages/akun/unggah-tugas.php';
 
@@ -88,19 +89,16 @@ if (!in_array($mime, $allowedMime, true)) {
     exit;
 }
 
-$targetDir = __DIR__ . '/../assets/jurnal/';
-if (!file_exists($targetDir)) {
-    mkdir($targetDir, 0777, true);
-}
-$newName = 'jurnal_' . uniqid('', true) . '.' . $ext;
-if (!move_uploaded_file($file['tmp_name'], $targetDir . $newName)) {
+$targetDir = private_storage_directory('jurnal');
+$newName = 'jurnal_' . bin2hex(random_bytes(16)) . '.' . $ext;
+if (!move_uploaded_file($file['tmp_name'], $targetDir . '/' . $newName)) {
     flash_error('Gagal menyimpan file. Coba lagi.');
     header('Location: ' . $kembali);
     exit;
 }
 
 $stmt = $pdo->prepare("INSERT INTO jurnal_peserta (user_email, pendaftar_id, pengajar_id, judul_jurnal, path_file) VALUES (?, ?, ?, ?, ?)");
-$stmt->execute([$userEmail, $pendaftarId, $pengajarId, $judul, 'assets/jurnal/' . $newName]);
+$stmt->execute([$userEmail, $pendaftarId, $pengajarId, $judul, private_storage_database_path('jurnal', $newName)]);
 
 flash('Tugas "' . mb_strimwidth($judul, 0, 60, '…') . '" terkirim ke ' . $guru['name'] . '. Status review: Pending.');
 header('Location: ' . $kembali);

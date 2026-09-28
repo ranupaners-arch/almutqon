@@ -1,8 +1,8 @@
 <?php
 // Migrasi additive dan idempoten untuk Member ID, Enrollment ID, dan Staff ID.
-// Jalankan: php config/schema-identitas.php
-require_once __DIR__ . '/database.php';
-require_once __DIR__ . '/identity.php';
+require_once dirname(__DIR__, 2) . '/tools/cli-only.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
+require_once dirname(__DIR__, 2) . '/config/identity.php';
 
 function identity_column_exists(PDO $pdo, string $table, string $column): bool
 {

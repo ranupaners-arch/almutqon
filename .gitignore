@@ -13,10 +13,20 @@ desktop.ini
 opencode.json
 
 # Uploaded & generated runtime assets
-assets/jurnal/
-assets/materi/
 assets/uploads/
 assets/avatars/
+storage/*
+!storage/.htaccess
+!storage/jurnal/
+!storage/jurnal/.gitkeep
+!storage/materi/
+!storage/materi/.gitkeep
+!storage/backups/
+!storage/backups/.gitkeep
+
+# Release artifacts
+release/
+*.tar.gz
 
 # Logs / cache / temp / backups
 *.log

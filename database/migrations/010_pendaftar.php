@@ -1,7 +1,7 @@
 <?php
-// config/schema-pendaftar.php — migrasi sekali jalan: buat tabel `pendaftar`
-// Jalankan: php config/schema-pendaftar.php
-require_once __DIR__ . '/database.php';
+// Migrasi tabel pendaftar.
+require_once dirname(__DIR__, 2) . '/tools/cli-only.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 $pdo->exec("CREATE TABLE IF NOT EXISTS pendaftar (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

@@ -1,8 +1,8 @@
 <?php
-// config/schema-agenda.php — migrasi sekali jalan: tabel agenda kegiatan (kalender admin ↔ user)
+// Migrasi agenda kegiatan (kalender admin dan user).
 // Cakupan: 'global' (semua user) atau per program (hanya peserta LUNAS program tsb).
-// Jalankan: php config/schema-agenda.php
-require_once __DIR__ . '/database.php';
+require_once dirname(__DIR__, 2) . '/tools/cli-only.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 $pdo->exec("CREATE TABLE IF NOT EXISTS agenda (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

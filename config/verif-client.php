@@ -4,30 +4,13 @@
 // Prinsip: gagal API TIDAK PERNAH fatal — selalu kembalikan array + error_log,
 // alur LUNAS di sisi almutqon tetap jalan (verifikasi bisa diulang dari admin).
 
+require_once __DIR__ . '/runtime.php';
+
 // Parser .env ringan (cermin config/database.php) agar klien tetap berfungsi di
 // konteks CLI/cron yang tidak me-require database.php. Tidak menimpa env eksisting.
 function verif_load_env(): void
 {
-    $envFile = __DIR__ . '/../.env';
-    if (!file_exists($envFile)) {
-        return;
-    }
-    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    if (!is_array($lines)) {
-        return;
-    }
-    foreach ($lines as $line) {
-        $line = trim($line);
-        if ($line === '' || str_starts_with($line, '#')) {
-            continue;
-        }
-        [$key, $value] = array_pad(explode('=', $line, 2), 2, '');
-        $key = trim($key);
-        $value = trim($value);
-        if ($key !== '' && getenv($key) === false) {
-            putenv("$key=$value");
-        }
-    }
+    // Environment sudah dimuat oleh config/runtime.php.
 }
 
 // http:// hanya untuk host pengembangan (localhost/127.0.0.1/::1/*.test/*.local).

@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../tools/cli-only.php';
+
 // Uji proses paralel terhadap atomic counter. Membuat satu scope uji lalu membersihkannya.
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/identity.php';
@@ -25,7 +27,7 @@ for ($i = 0; $i < $workers; $i++) {
     if ($pid === 0) {
         try {
             $childPdo = new PDO(
-                "mysql:host={$host};dbname={$dbname};charset=utf8mb4",
+                "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4",
                 $username,
                 $password,
                 [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_EMULATE_PREPARES => false]
@@ -67,7 +69,7 @@ for ($i = 0; $i < $workers; $i++) {
 }
 rmdir($dir);
 $cleanupPdo = new PDO(
-    "mysql:host={$host};dbname={$dbname};charset=utf8mb4",
+    "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4",
     $username,
     $password,
     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_EMULATE_PREPARES => false]

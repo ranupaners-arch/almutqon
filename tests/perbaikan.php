@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../tools/cli-only.php';
+
 // tests/perbaikan.php — Tes regresi untuk perbaikan yang sudah diterapkan
 //
 // Cara pakai:

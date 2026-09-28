@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/cli-only.php';
+
 // tools/impor-verif.php — impor sekali jalan: daftarkan invoice LUNAS lama yang belum
 // terverifikasi ke API internal verif.almutqon v1 agar ID sinkron (no_surat = no_invoice).
 // Idempoten & aman diulang: baris yang sudah punya verif_token dilewati; API create

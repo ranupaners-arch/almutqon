@@ -4,6 +4,7 @@
 // File TIDAK ditautkan langsung agar tidak bisa ditebak/diakses tanpa hak.
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/storage.php';
 
 $id = (int) ($_GET['id'] ?? 0);
 $stmt = $pdo->prepare("SELECT * FROM materi_kursus WHERE id = ? LIMIT 1");
@@ -28,10 +29,9 @@ if (!$materi || !$allowed) {
     exit;
 }
 
-// Kunci path ke dalam assets/materi (cegah path traversal via DB).
-$base = realpath(__DIR__ . '/../assets/materi');
-$full = realpath(__DIR__ . '/../' . $materi['path_file']);
-if ($base === false || $full === false || strpos($full, $base) !== 0 || !is_file($full)) {
+// Resolver hanya menerima basename dan mendukung lokasi legacy assets/materi.
+$full = private_storage_resolve('materi', (string) $materi['path_file']);
+if ($full === false) {
     http_response_code(404);
     header('Content-Type: text/plain; charset=utf-8');
     echo 'File materi tidak tersedia di server.';

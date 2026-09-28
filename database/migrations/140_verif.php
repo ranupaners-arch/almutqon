@@ -1,11 +1,11 @@
 <?php
-// config/schema-verif.php — migrasi idempoten: rujukan & status sinkronisasi verifikasi di tabel `pendaftar`
+// Migrasi rujukan dan status sinkronisasi verifikasi pada tabel pendaftar.
 // Kolom `verif_token`/`verif_code`/`verif_url` diisi saat admin konfirmasi LUNAS
 // (didaftarkan ke API internal verif.almutqon v1). Kolom status `verif_*` dipakai
 // rekonsiliasi: pending (belum/skipped), synced (terdaftar), failed (gagal + error).
 // Wajib dijalankan juga di DB live.
-// Jalankan: php config/schema-verif.php
-require_once __DIR__ . '/database.php';
+require_once dirname(__DIR__, 2) . '/tools/cli-only.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 $cols = [
     'verif_token'  => "ALTER TABLE `pendaftar` ADD COLUMN `verif_token` CHAR(64) NULL DEFAULT NULL AFTER `no_invoice`",

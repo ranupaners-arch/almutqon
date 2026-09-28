@@ -1,7 +1,7 @@
 <?php
-// config/schema-password_resets.php — migrasi sekali jalan: buat tabel `password_resets`
-// Jalankan: php config/schema-password_resets.php
-require_once __DIR__ . '/database.php';
+// Migrasi tabel password_resets.
+require_once dirname(__DIR__, 2) . '/tools/cli-only.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 $pdo->exec("CREATE TABLE IF NOT EXISTS password_resets (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

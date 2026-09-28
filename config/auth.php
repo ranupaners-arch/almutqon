@@ -1,6 +1,8 @@
 <?php
 // config/auth.php — helper autentikasi admin + sesi + reset password
 
+require_once __DIR__ . '/runtime.php';
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

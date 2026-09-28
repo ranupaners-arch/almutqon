@@ -41,21 +41,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === 0) {
             $target_dir = __DIR__ . '/../../assets/avatars/';
             if (!file_exists($target_dir)) {
-                mkdir($target_dir, 0777, true);
+                mkdir($target_dir, 0755, true);
             }
 
-            $ext = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
-            $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+            $allowed = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+            $mime = (new finfo(FILEINFO_MIME_TYPE))->file((string) $_FILES['avatar']['tmp_name']);
             $max_size = 1024 * 1024; // 1 MB
 
-            if (!in_array($ext, $allowed, true)) {
+            if (!isset($allowed[$mime])) {
                 $_SESSION['pesan_sukses'] = 'Format avatar tidak didukung. Gunakan JPG, PNG, atau WebP.';
                 $_SESSION['jenis_pesan'] = 'error';
             } elseif ($_FILES['avatar']['size'] > $max_size) {
                 $_SESSION['pesan_sukses'] = 'Ukuran avatar maksimal 1 MB.';
                 $_SESSION['jenis_pesan'] = 'error';
             } else {
-                $new_name = 'avt_' . uniqid('', true) . '.' . $ext;
+                $new_name = 'avt_' . bin2hex(random_bytes(16)) . '.' . $allowed[$mime];
                 $target = $target_dir . $new_name;
                 if (move_uploaded_file($_FILES['avatar']['tmp_name'], $target)) {
                     if (!empty($user['avatar'])) {

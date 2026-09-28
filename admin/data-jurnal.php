@@ -4,6 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../config/csrf.php';
 require_once __DIR__ . '/../config/pengajar.php';
+require_once __DIR__ . '/../config/storage.php';
 
 require_admin();
 
@@ -29,16 +30,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tambah_materi'])) {
         if (!$okExt || !$okMime) {
             flash_error('File materi harus PDF, DOC, atau DOCX.');
         } else {
-            $dir = __DIR__ . '/../assets/materi/';
-            if (!file_exists($dir)) {
-                mkdir($dir, 0777, true);
-            }
-            $newName = 'materi_' . uniqid('', true) . '.' . $ext;
-            if (!move_uploaded_file($_FILES['file_materi']['tmp_name'], $dir . $newName)) {
+            $dir = private_storage_directory('materi');
+            $newName = 'materi_' . bin2hex(random_bytes(16)) . '.' . $ext;
+            if (!move_uploaded_file($_FILES['file_materi']['tmp_name'], $dir . '/' . $newName)) {
                 flash_error('Gagal menyimpan file materi.');
             } else {
                 $stmt = $pdo->prepare("INSERT INTO materi_kursus (program, judul, path_file) VALUES (?, ?, ?)");
-                $stmt->execute([$program, $judul, 'assets/materi/' . $newName]);
+                $stmt->execute([$program, $judul, private_storage_database_path('materi', $newName)]);
                 flash('Materi "' . mb_strimwidth($judul, 0, 60, '…') . '" ditambahkan.');
             }
         }
@@ -57,9 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hapus_materi'])) {
         flash_error('Materi tidak ditemukan.');
     } else {
         $pdo->prepare("DELETE FROM materi_kursus WHERE id = ?")->execute([$id]);
-        $f = realpath(__DIR__ . '/../' . $row['path_file']);
-        $base = realpath(__DIR__ . '/../assets/materi');
-        if ($f && $base && strpos($f, $base) === 0 && is_file($f)) {
+        $f = private_storage_resolve('materi', (string) $row['path_file']);
+        if ($f !== false) {
             @unlink($f);
         }
         flash('Materi dihapus.');

@@ -3,6 +3,7 @@
 // Akses: admin, pengajar (untuk menilai), atau pemilik jurnal itu sendiri.
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/storage.php';
 
 $id = (int) ($_GET['id'] ?? 0);
 $stmt = $pdo->prepare("SELECT * FROM jurnal_peserta WHERE id = ? LIMIT 1");
@@ -22,10 +23,9 @@ if (!$jurnal || !$allowed) {
     exit;
 }
 
-// Kunci path ke dalam assets/jurnal (cegah path traversal via DB).
-$base = realpath(__DIR__ . '/../assets/jurnal');
-$full = realpath(__DIR__ . '/../' . $jurnal['path_file']);
-if ($base === false || $full === false || strpos($full, $base) !== 0 || !is_file($full)) {
+// Resolver hanya menerima basename dan mendukung lokasi legacy assets/jurnal.
+$full = private_storage_resolve('jurnal', (string) $jurnal['path_file']);
+if ($full === false) {
     http_response_code(404);
     header('Content-Type: text/plain; charset=utf-8');
     echo 'File jurnal tidak tersedia di server.';

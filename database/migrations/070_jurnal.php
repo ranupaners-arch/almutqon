@@ -1,7 +1,7 @@
 <?php
-// config/schema-jurnal.php — migrasi sekali jalan: tabel materi kursus + jurnal peserta
-// Jalankan: php config/schema-jurnal.php
-require_once __DIR__ . '/database.php';
+// Migrasi materi kursus dan jurnal peserta.
+require_once dirname(__DIR__, 2) . '/tools/cli-only.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 $pdo->exec("CREATE TABLE IF NOT EXISTS materi_kursus (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

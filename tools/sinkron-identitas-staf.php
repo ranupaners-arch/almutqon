@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/cli-only.php';
+
 // Sinkronkan Staff ID baru ke layanan verifikasi tanpa membuat baris staff ganda.
 // Default dry-run. Jalankan dengan --execute setelah kedua service diperbarui.
 require_once __DIR__ . '/../config/database.php';

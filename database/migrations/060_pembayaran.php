@@ -1,7 +1,7 @@
 <?php
-// config/schema-pembayaran.php — migrasi idempoten: tambah kolom pembayaran kursus di tabel `pendaftar`
-// Jalankan: php config/schema-pembayaran.php
-require_once __DIR__ . '/database.php';
+// Migrasi pembayaran kursus.
+require_once dirname(__DIR__, 2) . '/tools/cli-only.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 function add_column_if_missing(PDO $pdo, string $table, string $column, string $definition): void
 {

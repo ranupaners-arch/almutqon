@@ -1,8 +1,8 @@
 <?php
-// config/schema-wa-reminder.php — migrasi idempoten: penanda reminder WA di tabel `pendaftar`
+// Migrasi penanda reminder WA pada tabel pendaftar.
 // Kolom `wa_reminder_at` diisi saat reminder <3 jam terkirim → cron tidak mengulang.
-// Jalankan: php config/schema-wa-reminder.php
-require_once __DIR__ . '/database.php';
+require_once dirname(__DIR__, 2) . '/tools/cli-only.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 $stmt = $pdo->prepare(
     "SELECT COUNT(*) FROM information_schema.columns

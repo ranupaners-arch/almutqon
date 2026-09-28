@@ -1,0 +1,9 @@
+Options -Indexes
+
+<IfModule mod_alias.c>
+    RedirectMatch 404 ^/assets/(?:jurnal|materi)(?:/|$)
+</IfModule>
+
+<FilesMatch "\.(?:php|phtml|phar|php[0-9]*)$">
+    Require all denied
+</FilesMatch>

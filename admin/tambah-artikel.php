@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $gambar_path = '';
     if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === 0) {
         $target_dir = __DIR__ . '/../assets/uploads/';
-        if (!file_exists($target_dir)) mkdir($target_dir, 0777, true);
+        if (!file_exists($target_dir)) mkdir($target_dir, 0755, true);
 
         $max_size = 2 * 1024 * 1024;
         $allowed_mime = ['image/jpeg', 'image/png', 'image/webp'];
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header("Location: tambah-artikel.php");
             exit;
         }
-        $new_filename = uniqid('art_', true) . '.' . $file_extension;
+        $new_filename = 'art_' . bin2hex(random_bytes(16)) . '.' . $file_extension;
         $target_file = $target_dir . $new_filename;
         if (move_uploaded_file($_FILES['gambar']['tmp_name'], $target_file)) {
             $gambar_path = 'assets/uploads/' . $new_filename;

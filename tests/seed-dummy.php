@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../tools/cli-only.php';
+
 require __DIR__ . '/../config/database.php';
 $pdo->exec("DELETE FROM articles WHERE judul LIKE 'UJI-%'");
 $rows = [

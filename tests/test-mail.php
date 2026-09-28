@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../tools/cli-only.php';
+
 // tests/test-mail.php — kirim email uji melalui SMTP yang dikonfigurasi di .env (Brevo).
 //
 // Cara pakai:

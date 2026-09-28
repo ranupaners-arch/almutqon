@@ -1,12 +1,12 @@
 <?php
-// config/schema-wali.php — migrasi sekali jalan: perwalian, jadwal kesepakatan & RPP.
+// Migrasi perwalian, jadwal kesepakatan, dan RPP.
 // - perwalian: pengajar menjadi wali privat (per peserta), wali kelompok (per program),
 //   atau wali dauroh (gabungan beberapa pengajar = beberapa baris).
 // - jadwal_sepakatan: hari belajar yang disepakati murid & guru (CSV nama hari Indonesia).
 //   pendaftar_id terisi = privat per peserta; kosong = kelompok per program.
 // - rpp: Rencana Pelaksanaan Pembelajaran milik pengajar (semua pengajar bisa akses).
-// Jalankan: php config/schema-wali.php
-require_once __DIR__ . '/database.php';
+require_once dirname(__DIR__, 2) . '/tools/cli-only.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 $pdo->exec("CREATE TABLE IF NOT EXISTS perwalian (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

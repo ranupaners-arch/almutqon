@@ -1,13 +1,13 @@
 <?php
-// config/schema-tugas-nilai.php — migrasi idempoten: routing tugas ke pengajar + jejak penilai.
+// Migrasi routing tugas, nilai, dan jejak penilai.
 // - jurnal_peserta.pengajar_id : pengajar tujuan (dipilih user saat unggah), NULL = lama/tanpa tujuan
 // - jurnal_peserta.dinilai_oleh / dinilai_pada : jejak siapa & kapan menilai (untuk pemantauan)
 // - materi_kursus.diunggah_oleh : nama/ID pengunggah materi (admin/pengajar)
 // - jurnal_peserta.nilai : nilai huruf (A+, A, A-, B+, B, B-, C+, C, D, E), NULL = belum dinilai
 // - jurnal_peserta.hapus_user / hapus_pengajar : soft delete per sisi (1 = disembunyikan
 //   untuk user / pengajar; sisi lain & admin tetap melihat; file fisik dipertahankan)
-// Jalankan: php config/schema-tugas-nilai.php
-require_once __DIR__ . '/database.php';
+require_once dirname(__DIR__, 2) . '/tools/cli-only.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 function tambah_kolom_nilai(PDO $pdo, string $table, string $column, string $definition): void
 {

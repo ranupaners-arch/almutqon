@@ -1,8 +1,8 @@
 <?php
-// config/schema-absensi.php — migrasi sekali jalan: tabel kehadiran peserta per sesi.
+// Migrasi tabel kehadiran peserta per sesi.
 // Satu peserta satu baris per tanggal (UNIQUE pendaftar_id + tanggal).
-// Jalankan: php config/schema-absensi.php
-require_once __DIR__ . '/database.php';
+require_once dirname(__DIR__, 2) . '/tools/cli-only.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 $pdo->exec("CREATE TABLE IF NOT EXISTS absensi (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
