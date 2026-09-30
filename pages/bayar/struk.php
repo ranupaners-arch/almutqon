@@ -101,7 +101,9 @@ $metodeBayar = match ($row['metode_pembayaran']) {
 
         <table class="detail">
             <tr><td class="k">No. Invoice</td><td class="v"><?= htmlspecialchars($row['no_invoice']) ?></td></tr>
-            <tr><td class="k">Enrollment ID</td><td class="v"><?= htmlspecialchars($row['enrollment_id'] ?: '-') ?></td></tr>
+            <?php if (!empty($row['enrollment_id'])): ?>
+            <tr><td class="k">Enrollment ID</td><td class="v"><?= htmlspecialchars($row['enrollment_id']) ?></td></tr>
+            <?php endif; ?>
             <tr><td class="k">Tanggal</td><td class="v"><?= date('d M Y') ?></td></tr>
             <?php if ($lunas && !empty($row['tanggal_bayar'])): ?>
             <tr><td class="k">Tanggal Bayar</td><td class="v"><?= htmlspecialchars(date('d M Y', strtotime($row['tanggal_bayar']))) ?></td></tr>

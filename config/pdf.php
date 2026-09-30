@@ -164,7 +164,9 @@ class StrukPdf
 
         // --- Info umum ---
         $this->baris("No. Invoice", ':  ' . $row['no_invoice']);
-        $this->baris("Enrollment ID", ':  ' . ($row['enrollment_id'] ?: '-'));
+        if (!empty($row['enrollment_id'])) {
+            $this->baris("Enrollment ID", ':  ' . $row['enrollment_id']);
+        }
         $this->baris("Tanggal Cetak", ':  ' . date('d M Y'));
         if ($lunas && !empty($row['tanggal_bayar'])) {
             $this->baris("Tanggal Bayar", ':  ' . date('d M Y', strtotime($row['tanggal_bayar'])));
