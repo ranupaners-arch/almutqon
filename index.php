@@ -13,14 +13,7 @@
 <button class="btn btn-primary" id="heroRegisterBtn">Daftar Sekarang<span class="material-symbols-rounded btn__icon">arrow_forward</span></button>
 <a href="#program" class="btn btn-outline">Kenali Program Kami</a>
 </div>
-<div class="hero__trust reveal" style="transition-delay:.4s">
-<div class="hero__avatars">
-<img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80" alt="Avatar peserta 1">
-<img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80" alt="Avatar peserta 2">
-<img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80" alt="Avatar peserta 3">
-</div>
-<span>Lebih dari <strong>500</strong> pendaftar</span>
-</div>
+
 </div>
 <div class="hero__visual reveal-scale" style="transition-delay:.2s">
 <div class="hero__image-wrap">

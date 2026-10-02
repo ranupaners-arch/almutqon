@@ -231,15 +231,15 @@ Good design should primarily come from:
 
 # 8. Visual Identity
 
-The primary visual direction uses blue.
+The primary visual direction uses **forest green** (`#166534`) with amber accents (`#F59E0B`). This palette evokes growth, nature, and warmth—appropriate for an educational platform.
 
 Do not randomly replace or introduce colors.
 
 Before adding a new color:
 
-1. Check the existing design system.
-2. Reuse existing colors when possible.
-3. Ensure sufficient contrast.
+1. Check the existing design system in `css/base.css`.
+2. Reuse existing CSS custom properties (`--forest`, `--primary`, `--accent`) when possible.
+3. Ensure sufficient contrast, especially in dark mode.
 4. Keep visual hierarchy clear.
 
 Do not create a new color palette for a small component unless necessary.
